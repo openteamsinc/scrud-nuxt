@@ -1,0 +1,41 @@
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    <meta name="description" content="Sample of read-through caching.">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>CachingClient Sample: Read-through Caching</title>
+    <script type="text/javascript" src="cachingClient.js"></script>
+  </head>
+
+  <body>
+    <h1>CachingClient Sample: Read-through Caching</h1>
+    <h2>Source code</h3>
+    <p> 
+        <code><a href="cachingClient.js">cachingClient.js</a></code>
+    </p>
+    <h2>Use the devtools of the browser to interact with the cachingClient</h3>
+    <p>
+        For example you can try in the console:
+        <p>
+            <code>
+                await cachingClient.get("http://dummy.restapiexample.com/api/v1/employees", true)
+            </code>
+        </p>
+        To check a dummy JSON of a list of employees.
+    </p>
+    <p>
+        Also, you can use:
+        <p>
+            <code>
+                await cachingClient.clearCache();
+            </code>
+        </p>
+        To clear/empty the cache.
+    </p>
+
+  </body>
+</html>
