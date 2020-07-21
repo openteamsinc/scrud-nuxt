@@ -90,7 +90,8 @@ async function _httpRequest(url, requestOptions) {
 async function get(url, json, options) {
     const requestOptions = {
         method: 'GET',
-        ...options
+        ...options,
+        json
     };
     return _httpRequest(url, requestOptions);
 }
@@ -98,7 +99,8 @@ async function get(url, json, options) {
 async function options(url, json, options) {
     const requestOptions = {
         method: 'OPTIONS',
-        ...options
+        ...options,
+        json
     };
     return _httpRequest(url, requestOptions);
 }
@@ -108,7 +110,8 @@ async function post(url, body, json, options) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
-        ...options
+        ...options,
+        json
     };
     return _httpRequest(url, requestOptions);
 }
@@ -118,7 +121,8 @@ async function put(url, body, json, options) {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
-        ...options
+        ...options,
+        json
     };
     return _httpRequest(url, requestOptions);
 }
@@ -127,7 +131,8 @@ async function put(url, body, json, options) {
 async function _delete(url, json, options) {
     const requestOptions = {
         method: 'DELETE',
-        ...options
+        ...options,
+        json
     };
     return _httpRequest(url, requestOptions);
 }
