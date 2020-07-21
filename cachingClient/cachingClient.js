@@ -37,16 +37,16 @@ async function clearCache(){
     return await caches.delete(CURRENT_CACHES['read-through']);
 }
 
+// Cache handling: Retrieve and cache a response from a new request or retrieve response from cache
 async function cacheRequest(request, callback) {
     const cache = await caches.open(CURRENT_CACHES['read-through'])
-    const response = await cache.match(request);
-    if (response) {
+    let cacheResponse = await cache.match(request);
+    if (cacheResponse) {
         // If there is an entry in the cache for event.request, then response will be defined
         // and we can just return it.
-        console.log(' Found response in cache:', response);
-
-        return response;
-      }
+        console.log(' Found response in cache:', cacheResponse);
+        return cacheResponse;
+    }
 
     // Otherwise, if there is no entry in the cache for event.request, response will be
     // undefined, and we need to fetch() the resource.
@@ -56,12 +56,11 @@ async function cacheRequest(request, callback) {
     // We call .clone() on the request since we might use it in the call to cache.put() later on.
     // Both fetch() and cache.put() "consume" the request, so we need to make a copy.
     // (see https://fetch.spec.whatwg.org/#dom-request-clone)
-    return fetch(request.clone()).then(function(response) {
-    console.log('  Response for %s from network is: %O', request.url, response);
-
+    const fetchResponse = await fetch(request.clone());
+    console.log('  Response for %s from network is: %O', request.url, fetchResponse);
     // Optional: add in extra conditions here, e.g. response.type == 'basic' to only cache
     // responses from the same domain. See https://fetch.spec.whatwg.org/#concept-response-type
-    if (response.status < 400) {
+    if (fetchResponse.status < 400) {
         // This avoids caching responses that we know are errors (i.e. HTTP status code of 4xx or 5xx).
         // One limitation is that, for non-CORS requests, we get back a filtered opaque response
         // (https://fetch.spec.whatwg.org/#concept-filtered-response-opaque) which will always have a
@@ -70,22 +69,38 @@ async function cacheRequest(request, callback) {
         //
         // We need to call .clone() on the response object to save a copy of it to the cache.
         // (https://fetch.spec.whatwg.org/#dom-request-clone)
-        cache.put(request, response.clone());
+        cache.put(request, fetchResponse.clone());
     }
 
     // Return the original response object, which will be used to fulfill the resource request.
-    return response;
-    });
+    return fetchResponse;
 }
 
-// Requests available
+// Helper function to cache requests
+async function _httpRequest(url, requestOptions) {
+    try{
+        const response = await cacheRequest(new Request(url, requestOptions))
+        return requestOptions.json? await JSONhandleResponse(response): response;
+    } catch(err) {
+        console.log('Error while catching the request', err);
+    }
+}
+
+// Requests available (GET, OPTIONS, POST, PUT, DELETE)
 async function get(url, json, options) {
     const requestOptions = {
         method: 'GET',
         ...options
     };
-    const response = await cacheRequest(new Request(url, requestOptions))
-    return json? await JSONhandleResponse(response): response;
+    return _httpRequest(url, requestOptions);
+}
+
+async function options(url, json, options) {
+    const requestOptions = {
+        method: 'OPTIONS',
+        ...options
+    };
+    return _httpRequest(url, requestOptions);
 }
 
 async function post(url, body, json, options) {
@@ -95,8 +110,8 @@ async function post(url, body, json, options) {
         body: JSON.stringify(body),
         ...options
     };
-    const response = await cacheRequest(new Request(url, requestOptions))
-    return json? await JSONhandleResponse(response): response;}
+    return _httpRequest(url, requestOptions);
+}
 
 async function put(url, body, json, options) {
     const requestOptions = {
@@ -105,8 +120,7 @@ async function put(url, body, json, options) {
         body: JSON.stringify(body),
         ...options
     };
-    const response = await cacheRequest(new Request(url, requestOptions))
-    return json? await JSONhandleResponse(response): response;
+    return _httpRequest(url, requestOptions);
 }
 
 // prefixed with underscored because delete is a reserved word in javascript
@@ -115,8 +129,7 @@ async function _delete(url, json, options) {
         method: 'DELETE',
         ...options
     };
-    const response = await cacheRequest(new Request(url, requestOptions))
-    return json? await JSONhandleResponse(response): response;
+    return _httpRequest(url, requestOptions);
 }
 
 // helper functions

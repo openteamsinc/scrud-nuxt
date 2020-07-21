@@ -6,7 +6,7 @@ Example Caching Client (HTTP Client using the Cache API). This example cache any
 
 * `clearCache`: Removes any entry in the managed cache store.
 * `clearUnknownCache`: Removes any entry in caches not being managed by the client.
-* Requests (`GET`, `POST`, `PUT`, `DELETE`): Each request can be used calling its respective function (i.e `get(...)`, `post(...)`, `put(...)`, and `delete(...)`).
+* Requests (`GET`, `OPTIONS`, `POST`, `PUT`, `DELETE`): Each request can be used calling its respective function (i.e `get(...)`, `options(...)`, `post(...)`, `put(...)`, and `delete(...)`).
 
     The parameters for the available functions are:
     * `url`: URL to fetch.
@@ -37,14 +37,12 @@ http-server -p 3000
         No response for https://jsonplaceholder.typicode.com/users/1/todos found in cache. About to fetch from network... cachingClient.js:53:13
         Response for https://jsonplaceholder.typicode.com/users/1/todos from network is:  
         Response { type: "cors", url: "https://jsonplaceholder.typicode.com/users/1/todos", redirected: false, status: 200, ok: true, statusText: "OK", headers: Headers, body: ReadableStream, bodyUsed: false }
-        cachingClient.js:60:13
         Array(20) [ {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, … ]
         ```
     * Result with cache:
         ```js
         Found response in cache: 
         Response { type: "cors", url: "https://jsonplaceholder.typicode.com/users/1/todos", redirected: false, status: 200, ok: true, statusText: "OK", headers: Headers, body: ReadableStream, bodyUsed: false }
-        cachingClient.js:46:17
         Array(20) [ {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, … ]  
         ```
 ## Resources
