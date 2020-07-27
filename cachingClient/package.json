@@ -1,0 +1,42 @@
+{
+  "name": "caching-client",
+  "version": "0.1.0",
+  "description": "Example Caching Client (HTTP Client using the Cache API). This example cache any request that is made using the available functions.",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/openteamsinc/scrud-nuxt.git"
+  },
+  "keywords": [
+    "Cache",
+    "HTTP",
+    "Client",
+    "Semantic"
+  ],
+  "author": "Daniel Althviz",
+  "license": "BSD-3-Clause",
+  "bugs": {
+    "url": "https://github.com/openteamsinc/scrud-nuxt/issues"
+  },
+  "homepage": "https://github.com/openteamsinc/scrud-nuxt/tree/master/cachingClient#readme",
+  "devDependencies": {
+    "@babel/core": "^7.10.5",
+    "@babel/plugin-proposal-class-properties": "^7.10.4",
+    "@babel/preset-env": "^7.10.4",
+    "babel-jest": "^26.1.0",
+    "browser-env": "^3.3.0",
+    "jest": "^26.1.0",
+    "jest-environment-jsdom-fourteen": "^1.0.1",
+    "jest-fetch-mock": "^3.0.3"
+  },
+  "jest": {
+    "automock": false,
+    "setupFiles": [
+      "./setupJest.js"
+    ],
+    "testEnvironment": "jest-environment-jsdom-fourteen"
+  }
+}
