@@ -41,3 +41,4 @@ class CacheStorage {
 };
 
 global.caches = new CacheStorage();
+global._caches = caches;
