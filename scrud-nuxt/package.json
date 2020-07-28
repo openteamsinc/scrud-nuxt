@@ -13,7 +13,8 @@
   "dependencies": {
     "bootstrap": "^4.5.0",
     "bootstrap-vue": "^2.15.0",
-    "nuxt": "^2.13.0"
+    "nuxt": "^2.13.0",
+    "vue-form-json-schema": "^2.6.0"
   },
   "devDependencies": {
     "@vue/test-utils": "^1.0.3",
