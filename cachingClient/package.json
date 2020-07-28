@@ -35,7 +35,7 @@
   "jest": {
     "automock": false,
     "setupFiles": [
-      "./setupJest.js"
+      "./test/setup.js"
     ],
     "testEnvironment": "jest-environment-jsdom-fourteen"
   }
