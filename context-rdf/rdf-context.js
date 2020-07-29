@@ -1,53 +1,51 @@
 const JsonLdParser = require("jsonld-streaming-parser").JsonLdParser;
-
+const { JSONPath } = require("jsonpath-plus");
 const fs = require('fs');
 
 function RdfContext() {
 
-  this.lookup = (jsonpath) => {
-    
-  }
+  // Not functional, need endpoints to be implemented to test. Currently using local files and the fs library
+  this.lookup = (jsonpath, contextUrl) => {
+    return new Promise(resolve => {
+      const parser = new JsonLdParser();
 
-  // Get the supertypes
-  this.supertypes = async function (url, options) {
-    // TODO: Remove example.com when jsonld files are added to openteams api
-    return fetch('https://example.com').then(res => {
-      const stream = fs.createReadStream(url);
-      return getSupertypes(stream);
+      let context = fs.readFileSync('../jsonld-tests/example-semantic-context.json');
+
+      let parsed = JSONPath({
+        path: jsonpath,
+        json: context
+      });
+
+      let contextLd = fs.createReadStream('../jsonld-tests/example-semantic-context.json');
+
+      parser.import(contextLd)
+        .on('data', (quad) => {
+          resolve(quad)
+        })
     })
   }
 
-  async function getSupertypes(stream) {
-    return await processSteam(stream);
-  }
-
-  function processSteam(stream) {
+  // Not functional, need endpoints to be implemented to test. Currently using local files and the fs library
+  this.supertype = (type, contextUrl, schemaUrl) => {
     return new Promise(resolve => {
-      // TODO: Update to use from JsonLdParser.fromHttpResponse when jsonld files are added to openteams api
       const parser = new JsonLdParser();
 
-      let supertypes = []
+      // TODO: Change to make an http request to get the context when endpoints are implemented
+      const stream = fs.createReadStream('../jsonld-tests/tree.jsonld');
 
       parser.import(stream)
         .on('data', (quad) => {
-          let type = checkForType(quad);
-          type && supertypes.push(type);
-        })
-        .on('error', () => {
-          resolve(undefined);
-          throw new Error(
-            'A JSON-LD parsing error occurred while attempting to get supertypes. Check the file for syntax errors.');
-        })
-        .on('end', () => {
-          resolve([...new Set(supertypes)]);
+          let value = quad['subject']['value'];
+
+          if (value === type && supertype(quad)) {
+            resolve(quad['object']['value']);
+          }
         })
     })
   }
 
-  function checkForType(quad) {
-    if (quad['predicate']['value'].includes('#type')) {
-      return quad['object']['value'];
-    }
+  function supertype(quad) {
+    return quad['predicate']['value'].includes('#subClassOf');
   }
 }
 

@@ -9,6 +9,7 @@
   "author": "openteams",
   "license": "ISC",
   "dependencies": {
-    "jsonld-streaming-parser": "^2.0.2"
+    "jsonld-streaming-parser": "^2.0.2",
+    "jsonpath-plus": "^4.0.0"
   }
 }
