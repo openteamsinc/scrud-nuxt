@@ -21,7 +21,7 @@ To play with it you can use the [`http-server`](https://www.npmjs.com/package/ht
 npm install http-server -g
 ```
 
-And under this directory:
+And under the `demo` directory:
 
 ```
 http-server -p 3000
@@ -34,7 +34,7 @@ http-server -p 3000
 * Run something like `await cachingClient.get("https://jsonplaceholder.typicode.com/users/1/todos", true)`.
     * Result without cache:
         ```js
-        No response for https://jsonplaceholder.typicode.com/users/1/todos found in cache. About to fetch from network... cachingClient.js:53:13
+        No response for https://jsonplaceholder.typicode.com/users/1/todos found in cache. About to fetch from network...
         Response for https://jsonplaceholder.typicode.com/users/1/todos from network is:  
         Response { type: "cors", url: "https://jsonplaceholder.typicode.com/users/1/todos", redirected: false, status: 200, ok: true, statusText: "OK", headers: Headers, body: ReadableStream, bodyUsed: false }
         Array(20) [ {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, … ]

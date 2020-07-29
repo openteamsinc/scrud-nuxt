@@ -6,14 +6,6 @@ const CACHE_VERSION = 1;
 const CURRENT_CACHES = {
   'read-through': 'read-through-cache-v' + CACHE_VERSION
 };
-const cachingClient = {
-    clearUnknownCache,
-    clearCache,
-    get,
-    post,
-    put,
-    delete: _delete
-};
 
 // Clears unhandled caches
 async function clearUnknownCache(){
@@ -25,7 +17,7 @@ async function clearUnknownCache(){
         cacheNames.map(function(cacheName) {
             if (expectedCacheNames.indexOf(cacheName) === -1) {
                 // If this cache name isn't present in the array of "expected" cache names, then delete it.
-                console.log('Deleting out of date cache:', cacheName);
+                // console.log('Deleting out of date cache:', cacheName);
                 return caches.delete(cacheName);
             }
         })
@@ -44,20 +36,19 @@ async function cacheRequest(request, callback) {
     if (cacheResponse) {
         // If there is an entry in the cache for event.request, then response will be defined
         // and we can just return it.
-        console.log(' Found response in cache:', cacheResponse);
+        // console.log(' Found response in cache:', cacheResponse);
         return cacheResponse;
     }
 
     // Otherwise, if there is no entry in the cache for event.request, response will be
     // undefined, and we need to fetch() the resource.
-    console.log(' No response for %s found in cache. ' +
-    'About to fetch from network...', request.url);
+    // console.log(' No response for %s found in cache. ' + 'About to fetch from network...', request.url);
 
     // We call .clone() on the request since we might use it in the call to cache.put() later on.
     // Both fetch() and cache.put() "consume" the request, so we need to make a copy.
     // (see https://fetch.spec.whatwg.org/#dom-request-clone)
     const fetchResponse = await fetch(request.clone());
-    console.log('  Response for %s from network is: %O', request.url, fetchResponse);
+    // console.log('  Response for %s from network is: %O', request.url, fetchResponse);
     // Optional: add in extra conditions here, e.g. response.type == 'basic' to only cache
     // responses from the same domain. See https://fetch.spec.whatwg.org/#concept-response-type
     if (fetchResponse.status < 400) {
@@ -82,7 +73,7 @@ async function _httpRequest(url, requestOptions) {
         const response = await cacheRequest(new Request(url, requestOptions))
         return requestOptions.json? await JSONhandleResponse(response): response;
     } catch(err) {
-        console.log('Error while catching the request', err);
+        console.error('Error while catching the request', err);
     }
 }
 
@@ -90,7 +81,8 @@ async function _httpRequest(url, requestOptions) {
 async function get(url, json, options) {
     const requestOptions = {
         method: 'GET',
-        ...options
+        ...options,
+        json
     };
     return _httpRequest(url, requestOptions);
 }
@@ -98,7 +90,8 @@ async function get(url, json, options) {
 async function options(url, json, options) {
     const requestOptions = {
         method: 'OPTIONS',
-        ...options
+        ...options,
+        json
     };
     return _httpRequest(url, requestOptions);
 }
@@ -108,7 +101,8 @@ async function post(url, body, json, options) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
-        ...options
+        ...options,
+        json
     };
     return _httpRequest(url, requestOptions);
 }
@@ -118,7 +112,8 @@ async function put(url, body, json, options) {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
-        ...options
+        ...options,
+        json
     };
     return _httpRequest(url, requestOptions);
 }
@@ -127,7 +122,8 @@ async function put(url, body, json, options) {
 async function _delete(url, json, options) {
     const requestOptions = {
         method: 'DELETE',
-        ...options
+        ...options,
+        json
     };
     return _httpRequest(url, requestOptions);
 }
@@ -142,3 +138,12 @@ async function JSONhandleResponse(response) {
     }
     return data;
 }
+
+export const cachingClient = {
+    clearUnknownCache,
+    clearCache,
+    get,
+    post,
+    put,
+    delete: _delete
+};
