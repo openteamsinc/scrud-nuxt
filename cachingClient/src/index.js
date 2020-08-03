@@ -6,6 +6,8 @@ const CACHE_VERSION = 1;
 const CURRENT_CACHES = {
   'read-through': 'read-through-cache-v' + CACHE_VERSION
 };
+const JSON_SCHEMA_ENVELOP = 'https://api.openteams.com/json-ld/Envelop';
+const JSON_SCHEMA_ENVELOP_ARRAY = 'https://api.openteams.com/json-ld/EnvelopArray';
 
 // Clears unhandled caches
 async function clearUnknownCache(){
@@ -48,6 +50,7 @@ async function cacheRequest(request, callback) {
     // Both fetch() and cache.put() "consume" the request, so we need to make a copy.
     // (see https://fetch.spec.whatwg.org/#dom-request-clone)
     const fetchResponse = await fetch(request.clone());
+    let response = fetchResponse;
     // console.log('  Response for %s from network is: %O', request.url, fetchResponse);
     // Optional: add in extra conditions here, e.g. response.type == 'basic' to only cache
     // responses from the same domain. See https://fetch.spec.whatwg.org/#concept-response-type
@@ -60,11 +63,34 @@ async function cacheRequest(request, callback) {
         //
         // We need to call .clone() on the response object to save a copy of it to the cache.
         // (https://fetch.spec.whatwg.org/#dom-request-clone)
-        cache.put(request, fetchResponse.clone());
+        if( isEnvelop(fetchResponse)) {
+            // Get Headers and content from response body, get response read-only values,
+            // cache response content with the headers extracted and values found.
+            const {ok, redirected, status, statusText} = fetchResponse;
+            const responseBody = await fetchResponse.json();
+            const {etag, last_modified, url} = responseBody;
+            const body = new Blob(JSON.parse(responseBody.content), {type: 'application/json'});
+
+            const headers = {'ETag': etag, 'Last-Modified': last_modified};
+            const unWrappResponse = new Response(body, {headers, status, statusText});
+
+            // Set response read only values that aren't available in the constructor.
+            Object.defineProperty(unWrappResponse, 'url', {value: url});
+            Object.defineProperty(unWrappResponse, 'ok', {value: ok});
+            Object.defineProperty(unWrappResponse, 'redirected', {value: redirected});
+            response = unWrappResponse;
+            cache.put(request, unWrappResponse.clone());
+
+        // TODO: Handle EnvelopArray
+        // } else if (isEnvelopArray(fetchResponse)) {
+
+        } else {
+            cache.put(request, fetchResponse.clone());
+        }
     }
 
-    // Return the original response object, which will be used to fulfill the resource request.
-    return fetchResponse;
+    // Return the original or unwrapped envelop response object, which will be used to fulfill the resource request.
+    return response;
 }
 
 // Helper function to cache requests
@@ -75,6 +101,16 @@ async function _httpRequest(url, requestOptions) {
     } catch(err) {
         console.error('Error while catching the request', err);
     }
+}
+
+function isEnvelop(response){
+    // TODO: Detect that a response is an Envelop
+    return response.headers.get('Link');
+}
+
+function isEnvelopArray(response){
+    // TODO: Detect that a response is an EnvelopArray
+    return response.headers;
 }
 
 // Requests available (GET, OPTIONS, POST, PUT, DELETE)
