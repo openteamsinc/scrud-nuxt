@@ -4,7 +4,9 @@
   "description": "Example Caching Client (HTTP Client using the Cache API). This example cache any request that is made using the available functions.",
   "main": "index.js",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "build:demo": "babel src/index.js -d demo",
+    "build:lib": "babel src/index.js -d lib"
   },
   "repository": {
     "type": "git",
@@ -23,8 +25,11 @@
   },
   "homepage": "https://github.com/openteamsinc/scrud-nuxt/tree/master/cachingClient#readme",
   "devDependencies": {
-    "@babel/core": "^7.10.5",
+    "@babel/cli": "^7.10.5",
+    "@babel/core": "^7.11.0",
     "@babel/plugin-proposal-class-properties": "^7.10.4",
+    "@babel/plugin-proposal-object-rest-spread": "^7.11.0",
+    "@babel/plugin-transform-modules-umd": "^7.10.4",
     "@babel/preset-env": "^7.10.4",
     "babel-jest": "^26.1.0",
     "browser-env": "^3.3.0",
