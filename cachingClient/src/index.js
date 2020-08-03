@@ -143,6 +143,7 @@ export const cachingClient = {
     clearUnknownCache,
     clearCache,
     get,
+    options,
     post,
     put,
     delete: _delete
