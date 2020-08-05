@@ -8,6 +8,6 @@ describe('caching-client', () => {
         const request = await cachingClient.get(url, true);
         expect(request).toEqual(expected);
         expect(_caches['read-through-cache-v1']).not.toBeUndefined();
-        expect(_caches['read-through-cache-v1'][new Request(url, {json: true})]).not.toBeUndefined();
+        expect(_caches['read-through-cache-v1'][url]).not.toBeUndefined();
    })
 });

@@ -1,13 +1,20 @@
-// Based on: 
+// ----- Resources
 // * https://jasonwatmore.com/post/2020/04/18/fetch-a-lightweight-fetch-wrapper-to-simplify-http-requests
 // * https://github.com/GoogleChrome/samples/tree/gh-pages/service-worker/read-through-caching
+// * https://gist.github.com/niallo/3109252#gistcomment-2883309
+
+
+// ----- Constants and values (probably need to be configurable)
 
 const CACHE_VERSION = 1;
 const CURRENT_CACHES = {
   'read-through': 'read-through-cache-v' + CACHE_VERSION
 };
-const JSON_SCHEMA_ENVELOP = 'https://api.openteams.com/json-ld/Envelop';
-const JSON_SCHEMA_ENVELOP_ARRAY = 'https://api.openteams.com/json-ld/EnvelopArray';
+const CURRENT_CACHE = 'read-through';
+const JSON_SCHEMA_REL_HEADER = 'describedBy';
+const JSON_SCHEMA_ENVELOP_TYPE = 'https://api.openteams.com/json-schema/Envelope';
+
+// ----- Cache handling
 
 // Clears unhandled caches
 async function clearUnknownCache(){
@@ -26,23 +33,25 @@ async function clearUnknownCache(){
     );
 }
 
-// Clear the current cache
+// Clear the current cache (CURRENT_CACHE)
 async function clearCache(){
-    return await caches.delete(CURRENT_CACHES['read-through']);
+    return await caches.delete(CURRENT_CACHES[CURRENT_CACHE]);
 }
 
-// Cache handling: Retrieve and cache a response from a new request or retrieve response from cache
-async function cacheRequest(request, callback) {
+// Retrieve and cache a response from a new request or retrieve response from cache
+async function cacheRequest(request) {
     const cache = await caches.open(CURRENT_CACHES['read-through'])
-    let cacheResponse = await cache.match(request);
+    let cacheResponse = await cache.match(request.url);
     if (cacheResponse) {
-        // If there is an entry in the cache for event.request, then response will be defined
-        // and we can just return it.
+        // If there is an entry in the cache for request.url, then response will be defined
+        // and we can just return it for now.
+        // TODO: Add a way to check if an update to the cache is needed
+        // e.g do a HEAD request to check cache headers for the resource.
         // console.log(' Found response in cache:', cacheResponse);
         return cacheResponse;
     }
 
-    // Otherwise, if there is no entry in the cache for event.request, response will be
+    // Otherwise, if there is no entry in the cache for request.url, response will be
     // undefined, and we need to fetch() the resource.
     // console.log(' No response for %s found in cache. ' + 'About to fetch from network...', request.url);
 
@@ -50,9 +59,9 @@ async function cacheRequest(request, callback) {
     // Both fetch() and cache.put() "consume" the request, so we need to make a copy.
     // (see https://fetch.spec.whatwg.org/#dom-request-clone)
     const fetchResponse = await fetch(request.clone());
-    let response = fetchResponse;
     // console.log('  Response for %s from network is: %O', request.url, fetchResponse);
-    // Optional: add in extra conditions here, e.g. response.type == 'basic' to only cache
+
+    // Optional: Add in extra conditions here, e.g. response.type == 'basic' to only cache
     // responses from the same domain. See https://fetch.spec.whatwg.org/#concept-response-type
     if (fetchResponse.status < 400) {
         // This avoids caching responses that we know are errors (i.e. HTTP status code of 4xx or 5xx).
@@ -63,37 +72,30 @@ async function cacheRequest(request, callback) {
         //
         // We need to call .clone() on the response object to save a copy of it to the cache.
         // (https://fetch.spec.whatwg.org/#dom-request-clone)
-        if( isEnvelop(fetchResponse)) {
+        const unwrappResources = await getUnwrappedResources(fetchResponse);
+        if( unwrappResources.length > 0 ) {
             // Get Headers and content from response body, get response read-only values,
             // cache response content with the headers extracted and values found.
-            const {ok, redirected, status, statusText} = fetchResponse;
-            const responseBody = await fetchResponse.json();
-            const {etag, last_modified, url} = responseBody;
-            const body = new Blob(JSON.parse(responseBody.content), {type: 'application/json'});
+            for (const unwrappResource of unwrappResources) {
+                const {ok, redirected, status, statusText} = fetchResponse;
+                const {headers, body, url} = unwrappResource;
+                const unWrappResponse = new Response(body, {headers, status, statusText});
 
-            const headers = {'ETag': etag, 'Last-Modified': last_modified};
-            const unWrappResponse = new Response(body, {headers, status, statusText});
-
-            // Set response read only values that aren't available in the constructor.
-            Object.defineProperty(unWrappResponse, 'url', {value: url});
-            Object.defineProperty(unWrappResponse, 'ok', {value: ok});
-            Object.defineProperty(unWrappResponse, 'redirected', {value: redirected});
-            response = unWrappResponse;
-            cache.put(request, unWrappResponse.clone());
-
-        // TODO: Handle EnvelopArray
-        // } else if (isEnvelopArray(fetchResponse)) {
-
-        } else {
-            cache.put(request, fetchResponse.clone());
+                // Set response read only values that aren't available in the Response constructor.
+                Object.defineProperty(unWrappResponse, 'url', {value: url});
+                Object.defineProperty(unWrappResponse, 'ok', {value: ok});
+                Object.defineProperty(unWrappResponse, 'redirected', {value: redirected});
+                cache.put(url, unWrappResponse.clone());
+            }
         }
+        cache.put(request.url, fetchResponse.clone());
     }
 
-    // Return the original or unwrapped envelop response object, which will be used to fulfill the resource request.
-    return response;
+    // Return the original response object, which will be used to fulfill the resource request.
+    return fetchResponse;
 }
 
-// Helper function to cache requests
+// ----- Helper functions to cache requests
 async function _httpRequest(url, requestOptions) {
     try{
         const response = await cacheRequest(new Request(url, requestOptions))
@@ -103,17 +105,68 @@ async function _httpRequest(url, requestOptions) {
     }
 }
 
-function isEnvelop(response){
-    // TODO: Detect that a response is an Envelop
-    return response.headers.get('Link');
+// Parse link headers and retrieve an object {rel0: url0, rel1: url1}
+function _parseLinkHeader(headers) {
+    // Taken from: https://gist.github.com/niallo/3109252#gistcomment-2883309
+    const header = headers.get('Link');
+    if (!header || header.length === 0) {
+        return {};
+    }
+
+    // Split parts by comma and parse each part into a named link
+    return header.split(/(?!\B"[^"]*),(?![^"]*"\B)/).reduce((links, part) => {
+        const section = part.split(/(?!\B"[^"]*);(?![^"]*"\B)/);
+        if (section.length < 2) {
+            throw new Error("Section could not be split on ';'");
+        }
+        const url = section[0].replace(/<(.*)>/, '$1').trim();
+        const name = section[1].replace(/rel="(.*)"/, '$1').trim();
+
+        links[name] = url;
+
+        return links;
+    }, {});
 }
 
-function isEnvelopArray(response){
-    // TODO: Detect that a response is an EnvelopArray
-    return response.headers;
+
+// ----- Envelop handling functions
+
+// Extract information from an envelop. Get the headers, body and url from the envelop provided.
+function unwrappEnvelop(envelop){
+    const {etag, last_modified, url, content} = envelop;
+    const headers = {ETag: etag, 'Last-Modified': last_modified}
+
+    return {headers,
+            body: new Blob(JSON.parse(content), {type: 'application/json'}),
+            url};
 }
 
-// Requests available (GET, OPTIONS, POST, PUT, DELETE)
+// Detect that a response is an Envelop and retrieve a list of unwrapped envelopes if needed.
+async function getUnwrappedResources(response){
+    const responseLinks = _parseLinkHeader(response.headers);
+    const jsonSchemaURI = responseLinks[JSON_SCHEMA_REL_HEADER];
+    const unwrappedResources = [];
+    if(jsonSchemaURI){
+        const schema = await get(jsonSchemaURI, true);
+        const schemaId = schema.$id;
+        const schemaItems = schema.properties.content.properties.items;
+        if (schemaId == JSON_SCHEMA_ENVELOP_TYPE){
+            // Handle single resource
+            unwrappedResources.push(unwrappEnvelop(await response.json()));
+            return unwrappedResources;
+        } else if (schemaItems && schemaItems.$ref == JSON_SCHEMA_ENVELOP_TYPE) {
+            // Handle array of resources
+            const content = await response.json();
+            for (const envelop of content) {
+                unwrappedResources.push(unwrappEnvelop(envelop));
+            }
+        }
+    }
+    return unwrappedResources;
+}
+
+// ----- Requests available (GET, OPTIONS, POST, PUT, DELETE)
+
 async function get(url, json, options) {
     const requestOptions = {
         method: 'GET',
@@ -154,8 +207,8 @@ async function put(url, body, json, options) {
     return _httpRequest(url, requestOptions);
 }
 
-// prefixed with underscored because delete is a reserved word in javascript
 async function _delete(url, json, options) {
+    // Prefixed with underscored because delete is a reserved word in javascript
     const requestOptions = {
         method: 'DELETE',
         ...options,
@@ -164,7 +217,7 @@ async function _delete(url, json, options) {
     return _httpRequest(url, requestOptions);
 }
 
-// helper functions
+// Helper function to parse a response as JSON (Probably not needed in the future and could be replaced with Response.json())
 async function JSONhandleResponse(response) {
     const text = await response.text();
     const data = text && JSON.parse(text);
@@ -175,6 +228,7 @@ async function JSONhandleResponse(response) {
     return data;
 }
 
+// Export of the functions that should be available for external use.
 export const cachingClient = {
     clearUnknownCache,
     clearCache,
