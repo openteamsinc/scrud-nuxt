@@ -11,7 +11,7 @@ const CURRENT_CACHES = {
   'read-through': 'read-through-cache-v' + CACHE_VERSION
 };
 const CURRENT_CACHE = 'read-through';
-const JSON_SCHEMA_REL_HEADER = 'describedBy';
+const JSON_SCHEMA_REL_HEADER = 'rel=\'describedBy\'';
 const JSON_SCHEMA_ENVELOP_TYPE = 'https://api.openteams.com/json-schema/Envelope';
 
 // ----- Cache handling
@@ -72,20 +72,20 @@ async function cacheRequest(request) {
         //
         // We need to call .clone() on the response object to save a copy of it to the cache.
         // (https://fetch.spec.whatwg.org/#dom-request-clone)
-        const unwrappResources = await getUnwrappedResources(fetchResponse);
+        const unwrappResources = await getUnwrappedResources(fetchResponse.clone());
         if( unwrappResources.length > 0 ) {
             // Get Headers and content from response body, get response read-only values,
             // cache response content with the headers extracted and values found.
             for (const unwrappResource of unwrappResources) {
                 const {ok, redirected, status, statusText} = fetchResponse;
                 const {headers, body, url} = unwrappResource;
-                const unWrappResponse = new Response(body, {headers, status, statusText});
+                const unWrappResponse = new Response(body, {headers, status, statusText, url});
 
                 // Set response read only values that aren't available in the Response constructor.
                 Object.defineProperty(unWrappResponse, 'url', {value: url});
                 Object.defineProperty(unWrappResponse, 'ok', {value: ok});
                 Object.defineProperty(unWrappResponse, 'redirected', {value: redirected});
-                cache.put(url, unWrappResponse.clone());
+                cache.put(url, unWrappResponse);
             }
         }
         cache.put(request.url, fetchResponse.clone());
@@ -93,6 +93,42 @@ async function cacheRequest(request) {
 
     // Return the original response object, which will be used to fulfill the resource request.
     return fetchResponse;
+}
+
+// ----- Envelop handling functions
+
+// Extract information from an envelop. Get the headers, body and url from the envelop provided.
+function unwrappEnvelop(envelop){
+    const {etag, last_modified, url, content} = envelop;
+    const headers = {ETag: etag, 'Last-Modified': last_modified}
+
+    return {headers,
+            body: JSON.stringify(content),
+            url};
+}
+
+// Detect that a response is an Envelop and retrieve a list of unwrapped envelopes if needed.
+async function getUnwrappedResources(response){
+    const responseLinks = _parseLinkHeader(response.headers);
+    const jsonSchemaURI = responseLinks[JSON_SCHEMA_REL_HEADER];
+    const unwrappedResources = [];
+    if(jsonSchemaURI && jsonSchemaURI !== response.url){
+        const schema = await get(jsonSchemaURI, true);
+        const schemaId = schema.$id;
+        const schemaItems = schema.properties.content.properties.items;
+        if (schemaId == JSON_SCHEMA_ENVELOP_TYPE){
+            // Handle single resource
+            unwrappedResources.push(unwrappEnvelop(await response.json()));
+            return unwrappedResources;
+        } else if (schemaItems && schemaItems.$ref == JSON_SCHEMA_ENVELOP_TYPE) {
+            // Handle array of resources
+            const content = await response.json();
+            for (const envelop of content) {
+                unwrappedResources.push(unwrappEnvelop(envelop));
+            }
+        }
+    }
+    return unwrappedResources;
 }
 
 // ----- Helper functions to cache requests
@@ -114,7 +150,7 @@ function _parseLinkHeader(headers) {
     }
 
     // Split parts by comma and parse each part into a named link
-    return header.split(/(?!\B"[^"]*),(?![^"]*"\B)/).reduce((links, part) => {
+    const found = header.split(/(?!\B"[^"]*),(?![^"]*"\B)/).reduce((links, part) => {
         const section = part.split(/(?!\B"[^"]*);(?![^"]*"\B)/);
         if (section.length < 2) {
             throw new Error("Section could not be split on ';'");
@@ -126,43 +162,8 @@ function _parseLinkHeader(headers) {
 
         return links;
     }, {});
-}
 
-
-// ----- Envelop handling functions
-
-// Extract information from an envelop. Get the headers, body and url from the envelop provided.
-function unwrappEnvelop(envelop){
-    const {etag, last_modified, url, content} = envelop;
-    const headers = {ETag: etag, 'Last-Modified': last_modified}
-
-    return {headers,
-            body: new Blob(JSON.parse(content), {type: 'application/json'}),
-            url};
-}
-
-// Detect that a response is an Envelop and retrieve a list of unwrapped envelopes if needed.
-async function getUnwrappedResources(response){
-    const responseLinks = _parseLinkHeader(response.headers);
-    const jsonSchemaURI = responseLinks[JSON_SCHEMA_REL_HEADER];
-    const unwrappedResources = [];
-    if(jsonSchemaURI){
-        const schema = await get(jsonSchemaURI, true);
-        const schemaId = schema.$id;
-        const schemaItems = schema.properties.content.properties.items;
-        if (schemaId == JSON_SCHEMA_ENVELOP_TYPE){
-            // Handle single resource
-            unwrappedResources.push(unwrappEnvelop(await response.json()));
-            return unwrappedResources;
-        } else if (schemaItems && schemaItems.$ref == JSON_SCHEMA_ENVELOP_TYPE) {
-            // Handle array of resources
-            const content = await response.json();
-            for (const envelop of content) {
-                unwrappedResources.push(unwrappEnvelop(envelop));
-            }
-        }
-    }
-    return unwrappedResources;
+    return found;
 }
 
 // ----- Requests available (GET, OPTIONS, POST, PUT, DELETE)

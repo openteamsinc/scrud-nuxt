@@ -1,6 +1,6 @@
-require('jest-fetch-mock').enableMocks()
+require('jest-fetch-mock').enableMocks();
 // changes default behavior of fetchMock to use the real 'fetch' implementation and not mock responses
-fetchMock.dontMock();
+//fetchMock.dontMock();
 
 // caches mock based on: https://github.com/apache-superset/superset-ui/blob/ea78a4e41a9e1e4b7f3fb86c9d61020c89652804/test/setup.ts
 const caches = {};
