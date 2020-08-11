@@ -1,13 +1,15 @@
-import {cachingClient} from '../src/index';
+import CachingClient from '../src/index';
 
 describe('caching-client', () => {
 
     beforeEach(()=>{
         fetch.resetMocks();
+        const cachingClient = new CachingClient();
         cachingClient.clearCache();
     });
 
     it('Check GET request - return Response object', async () => {
+        const cachingClient = new CachingClient();
         // Check the cache is clear
         expect(_caches['read-through-cache-v1']).toBeUndefined();
 
@@ -31,6 +33,7 @@ describe('caching-client', () => {
    });
 
    it('Check GET request - return parsed body', async () => {
+        const cachingClient = new CachingClient();    
         // Check the cache is clear
         expect(_caches['read-through-cache-v1']).toBeUndefined();
 
@@ -51,6 +54,7 @@ describe('caching-client', () => {
     });
 
    it('Check envelop properties handling', async () => {
+        const cachingClient = new CachingClient();    
         // Check the cache is clear
         expect(_caches['read-through-cache-v1']).toBeUndefined();
 

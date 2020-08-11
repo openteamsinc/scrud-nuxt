@@ -22,7 +22,8 @@
         For example you can try in the console:
         <p>
             <code>
-                await cachingClient.cachingClient.get("https://jsonplaceholder.typicode.com/users/1/todos", true)
+                client = new cachingClient.default();
+                await client.get("https://jsonplaceholder.typicode.com/users/1/todos", true);
             </code>
         </p>
         To check a dummy JSON of a list of todos.
@@ -31,7 +32,7 @@
         Also, you can use:
         <p>
             <code>
-                await cachingClient.cachingClient.clearCache();
+                await client.clearCache();
             </code>
         </p>
         To clear/empty the cache.
