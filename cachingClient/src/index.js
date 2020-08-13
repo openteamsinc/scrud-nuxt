@@ -102,8 +102,8 @@ class CachingClient extends EventDispatcher{
             // and we can just return it for now.
             // e.g do a HEAD request to check cache headers for the resource.
             // console.log(' Found response in cache:', cachedResponse);
-            // TODO: Add a way to check if an update to the cache is needed
-            const headResponse = await fetch(request.url, {method: this.HEAD});
+            const headRequest = new Request(request.url, {method: CachingClient.HEAD});
+            const headResponse = await fetch(headRequest);
             if(this._cacheUpToDate(headResponse, cachedResponse)){
                 return cachedResponse;
             }
@@ -130,14 +130,14 @@ class CachingClient extends EventDispatcher{
             //
             // We need to call .clone() on the response object to save a copy of it to the cache.
             // (https://fetch.spec.whatwg.org/#dom-request-clone)
+            cache.put(request.url, fetchResponse.clone());
             const unwrappedResources = await this._getUnwrappedResources(fetchResponse.clone());
             if( unwrappedResources.length > 0 ) {
                 this._cacheUnwrappedResources(unwrappedResources, fetchResponse, cache);
             }
-            cache.put(request.url, fetchResponse.clone());
-            if(!cachedResponse){
+            if(cachedResponse){
                 // Dispatch event informing of new info cached for the resource
-                this.dispatchEvent(new CustomEvent(request.url));
+                this.dispatchEvent(new CustomEvent(request.url, {detail: { url:request.url }}));
             }
         }
     
@@ -165,7 +165,7 @@ class CachingClient extends EventDispatcher{
                 if(!this._cacheUpToDate(unWrappedResponse, cachedResponse)){
                     cache.put(url, unWrappedResponse);
                     // Dispatch event informing of new info cached for a unwrapped resource
-                    this.dispatchEvent(new CustomEvent(url));
+                    this.dispatchEvent(new CustomEvent(url, {detail: { url }}));
                 }
             } else {
                 cache.put(url, unWrappedResponse);
@@ -218,16 +218,15 @@ class CachingClient extends EventDispatcher{
         const lastModifiedCacheHeader = cacheResponseHeaders.get('Last-Modified');
         const eTagCacheHeader = cacheResponseHeaders.get('ETag');
         // TODO: Check if a better validation is needed
-        return eTagCacheHeader != eTagHeader && lastModifiedCacheHeader != lastModifiedHeader;
+        return eTagCacheHeader == eTagHeader && lastModifiedCacheHeader == lastModifiedHeader;
     }
 
     // Logic handler of the different HTTP Requests available
     _httpRequest = async (url, requestOptions) => {
         try{
-            // TODO: Add logic to other types of request i.e PUT, DELETE
+            // TODO: Add logic to other types of request i.e PUT, DELETE, OPTIONS
             const {method, callback, json} = requestOptions;
-            if ((method == this.GET || method == this.POST) && callback){
-                console.log(callback);
+            if ((method == CachingClient.GET || method == CachingClient.POST) && callback){
                 this.addEventListener(url, callback);
             }
             const response = await this.cacheRequest(new Request(url, requestOptions))
@@ -274,7 +273,7 @@ class CachingClient extends EventDispatcher{
     
     get = async (url, options) => {
         const requestOptions = {
-            method: this.GET,
+            method: CachingClient.GET,
             ...options
         };
         return this._httpRequest(url, requestOptions);
@@ -282,7 +281,7 @@ class CachingClient extends EventDispatcher{
     
     options = async (url, options) => {
         const requestOptions = {
-            method: this.OPTIONS,
+            method: CachingClient.OPTIONS,
             ...options
         };
         return this._httpRequest(url, requestOptions);
@@ -290,7 +289,7 @@ class CachingClient extends EventDispatcher{
     
     post = async (url, body, options) => {
         const requestOptions = {
-            method: this.POST,
+            method: CachingClient.POST,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body),
             ...options
@@ -300,7 +299,7 @@ class CachingClient extends EventDispatcher{
     
     put = async (url, body, options) => {
         const requestOptions = {
-            method: this.PUT,
+            method: CachingClient.PUT,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body),
             ...options
@@ -310,7 +309,7 @@ class CachingClient extends EventDispatcher{
     
     delete = async (url, options) => {
         const requestOptions = {
-            method: this.DELETE,
+            method: CachingClient.DELETE,
             ...options
         };
         return this._httpRequest(url, requestOptions);
