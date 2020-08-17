@@ -63,8 +63,10 @@ class CachingClient extends EventDispatcher{
         super();
         this.cacheVersion = cacheVersion;
         this.currentCache = currentCache;
+        this.currentCacheOptions = `${currentCache}-options`;
         this.currentCaches = {};
         this.currentCaches[currentCache] = `${currentCache}-cache-v${cacheVersion}`;
+        this.currentCaches[this.currentCacheOptions] = `${currentCache}-cache-options-v${cacheVersion}`;
         this.jsonSchemaRelHeader = jsonSchemaRelHeader;
         this.jsonSchemaEnvelopType = jsonSchemaEnvelopType;
     }
@@ -95,9 +97,12 @@ class CachingClient extends EventDispatcher{
     
     // Retrieve and cache a response from a new request or retrieve response from cache
     cacheRequest = async (request) => {
-        const cache = await caches.open(this.currentCaches[this.currentCache])
+        const openCacheName = request.method == CachingClient.OPTIONS ?
+                                                this.currentCaches[this.currentCacheOptions]:
+                                                this.currentCaches[this.currentCache];
+        const cache = await caches.open(openCacheName)
         const cachedResponse = await cache.match(request.url);
-        if (cachedResponse) {
+        if (cachedResponse && (request.method == CachingClient.GET || request.method == CachingClient.OPTIONS)) {
             // If there is an entry in the cache for request.url, then response will be defined
             // and we can just return it for now.
             // e.g do a HEAD request to check cache headers for the resource.
@@ -107,6 +112,8 @@ class CachingClient extends EventDispatcher{
             if(this._cacheUpToDate(headResponse, cachedResponse)){
                 return cachedResponse;
             }
+        } else if (!cachedResponse && (request.method == CachingClient.PUT || request.method == CachingClient.DELETE)) {
+            throw new Error(`Can't do a ${request.method} without previously having information in the Cache about the resource`);
         }
     
         // Otherwise, if there is no entry in the cache for request.url or it needs to be updated, response will be

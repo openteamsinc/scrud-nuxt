@@ -1,11 +1,14 @@
 # Caching Client
 
-Example Caching Client (HTTP Client using the Cache API). This example caches the requests made using the available functions.
+Caching Client (HTTP Client using the Cache API).
 
 ## Available functions
 
 * `constructor`: Doing `new CachingClient` you can pass the following options:
-    *  
+    * `cacheVersion`: Default 1
+    * `currentCache`: Default 'read-through'
+    * `jsonSchemaRelHeader`: Default 'rel=\'describedBy\''
+    * `jsonSchemaEnvelopType`: Default 'https://api.openteams.com/json-schema/Envelope'
 * `clearCache`: Removes any entry in the managed cache store.
 * `clearUnknownCache`: Removes any entry in caches not being managed by the client.
 * Requests (`GET`, `OPTIONS`, `POST`, `PUT`, `DELETE`): Each request can be used calling its respective function (i.e `get(...)`, `options(...)`, `post(...)`, `put(...)`, and `delete(...)`).
@@ -13,15 +16,13 @@ Example Caching Client (HTTP Client using the Cache API). This example caches th
     The parameters for the available functions are:
     * `url`: URL to fetch.
     * `body`: Content of the request (in the case of `POST` or `PUT` requests).
-    * `options`: To add or override the options used to fetch the given URL (`headers`, `mode`, `method`, etc.). Also you can add a `json` option if what you want to be return is the JSON parsed body of the response.
-
+    * `options`: To add or override the options used to fetch the given URL (`headers`, `mode`, `method`, etc.). Also you can add a `json` option if what you want get the response as the JSON parsed body.
 
 ## Build lib
 
-To build a lib to be used in the browser you can use `npm run build:lib` this wil create the `index.js` file that can be used from an html file with a script tag like `<script type="text/javascript" src="index.js"></script>`
+To build a lib to be used in the browser you can use `npm run build:lib` this will create the `index.js` file that can be used from an HTML file with a script tag like `<script type="text/javascript" src="index.js"></script>`
 
-
-## Example Setup
+## Demo Setup
 To play with the caching client you can use the [`http-server`](https://www.npmjs.com/package/http-server) package:
 
 ```
@@ -36,7 +37,7 @@ http-server -p 3000
 
 To build the demo after doing changes to the source code you can run `npm run build:demo`
 
-## Example
+## Demo
 
 * Follow the setup above.
 * Go to http://localhost:3000

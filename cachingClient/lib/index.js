@@ -108,22 +108,25 @@
       });
 
       _defineProperty(this, "cacheRequest", async request => {
-        const cache = await caches.open(this.currentCaches[this.currentCache]);
+        const openCacheName = request.method == CachingClient.OPTIONS ? this.currentCaches[this.currentCacheOptions] : this.currentCaches[this.currentCache];
+        const cache = await caches.open(openCacheName);
         const cachedResponse = await cache.match(request.url);
 
-        if (cachedResponse) {
+        if (cachedResponse && (request.method == CachingClient.GET || request.method == CachingClient.OPTIONS)) {
           // If there is an entry in the cache for request.url, then response will be defined
           // and we can just return it for now.
           // e.g do a HEAD request to check cache headers for the resource.
           // console.log(' Found response in cache:', cachedResponse);
-          // TODO: Add a way to check if an update to the cache is needed
-          const headResponse = await fetch(request.url, {
-            method: this.HEAD
+          const headRequest = new Request(request.url, {
+            method: CachingClient.HEAD
           });
+          const headResponse = await fetch(headRequest);
 
           if (this._cacheUpToDate(headResponse, cachedResponse)) {
             return cachedResponse;
           }
+        } else if (!cachedResponse && (request.method == CachingClient.PUT || request.method == CachingClient.DELETE)) {
+          throw new Error(`Can't do a ${request.method} without previously having information in the Cache about the resource`);
         } // Otherwise, if there is no entry in the cache for request.url or it needs to be updated, response will be
         // undefined or old, and we need to fetch() the resource.
         // console.log(' No response for %s found in cache or response stored is old. ' + 'About to fetch from network...', request.url);
@@ -145,17 +148,20 @@
           //
           // We need to call .clone() on the response object to save a copy of it to the cache.
           // (https://fetch.spec.whatwg.org/#dom-request-clone)
+          cache.put(request.url, fetchResponse.clone());
           const unwrappedResources = await this._getUnwrappedResources(fetchResponse.clone());
 
           if (unwrappedResources.length > 0) {
             this._cacheUnwrappedResources(unwrappedResources, fetchResponse, cache);
           }
 
-          cache.put(request.url, fetchResponse.clone());
-
-          if (!cachedResponse) {
+          if (cachedResponse) {
             // Dispatch event informing of new info cached for the resource
-            this.dispatchEvent(new CustomEvent(request.url));
+            this.dispatchEvent(new CustomEvent(request.url, {
+              detail: {
+                url: request.url
+              }
+            }));
           }
         } // Return the original response object, which will be used to fulfill the resource request.
 
@@ -200,7 +206,11 @@
             if (!this._cacheUpToDate(unWrappedResponse, cachedResponse)) {
               cache.put(url, unWrappedResponse); // Dispatch event informing of new info cached for a unwrapped resource
 
-              this.dispatchEvent(new CustomEvent(url));
+              this.dispatchEvent(new CustomEvent(url, {
+                detail: {
+                  url
+                }
+              }));
             }
           } else {
             cache.put(url, unWrappedResponse);
@@ -264,20 +274,19 @@
         const lastModifiedCacheHeader = cacheResponseHeaders.get('Last-Modified');
         const eTagCacheHeader = cacheResponseHeaders.get('ETag'); // TODO: Check if a better validation is needed
 
-        return eTagCacheHeader != eTagHeader && lastModifiedCacheHeader != lastModifiedHeader;
+        return eTagCacheHeader == eTagHeader && lastModifiedCacheHeader == lastModifiedHeader;
       });
 
       _defineProperty(this, "_httpRequest", async (url, requestOptions) => {
         try {
-          // TODO: Add logic to other types of request i.e PUT, DELETE
+          // TODO: Add logic to other types of request i.e PUT, DELETE, OPTIONS
           const {
             method,
             callback,
             json
           } = requestOptions;
 
-          if ((method == this.GET || method == this.POST) && callback) {
-            console.log(callback);
+          if ((method == CachingClient.GET || method == CachingClient.POST) && callback) {
             this.addEventListener(url, callback);
           }
 
@@ -326,7 +335,7 @@
 
       _defineProperty(this, "get", async (url, options) => {
         const requestOptions = _objectSpread({
-          method: this.GET
+          method: CachingClient.GET
         }, options);
 
         return this._httpRequest(url, requestOptions);
@@ -334,7 +343,7 @@
 
       _defineProperty(this, "options", async (url, options) => {
         const requestOptions = _objectSpread({
-          method: this.OPTIONS
+          method: CachingClient.OPTIONS
         }, options);
 
         return this._httpRequest(url, requestOptions);
@@ -342,7 +351,7 @@
 
       _defineProperty(this, "post", async (url, body, options) => {
         const requestOptions = _objectSpread({
-          method: this.POST,
+          method: CachingClient.POST,
           headers: {
             'Content-Type': 'application/json'
           },
@@ -354,7 +363,7 @@
 
       _defineProperty(this, "put", async (url, body, options) => {
         const requestOptions = _objectSpread({
-          method: this.PUT,
+          method: CachingClient.PUT,
           headers: {
             'Content-Type': 'application/json'
           },
@@ -366,7 +375,7 @@
 
       _defineProperty(this, "delete", async (url, options) => {
         const requestOptions = _objectSpread({
-          method: this.DELETE
+          method: CachingClient.DELETE
         }, options);
 
         return this._httpRequest(url, requestOptions);
@@ -374,8 +383,10 @@
 
       this.cacheVersion = cacheVersion;
       this.currentCache = currentCache;
+      this.currentCacheOptions = `${currentCache}-options`;
       this.currentCaches = {};
       this.currentCaches[currentCache] = `${currentCache}-cache-v${cacheVersion}`;
+      this.currentCaches[this.currentCacheOptions] = `${currentCache}-cache-options-v${cacheVersion}`;
       this.jsonSchemaRelHeader = jsonSchemaRelHeader;
       this.jsonSchemaEnvelopType = jsonSchemaEnvelopType;
     } // ----- Cache handling
