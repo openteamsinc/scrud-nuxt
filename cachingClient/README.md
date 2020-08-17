@@ -22,6 +22,12 @@ Caching Client (HTTP Client using the Cache API).
 
 To build a lib to be used in the browser you can use `npm run build:lib` this will create the `index.js` file that can be used from an HTML file with a script tag like `<script type="text/javascript" src="index.js"></script>`
 
+## Use the package
+
+To use the package you need to install it from the source with something like `npm install --save <path to source>`
+
+After that, you can use something like `import CachingClient from 'caching-client'`
+
 ## Demo Setup
 To play with the caching client you can use the [`http-server`](https://www.npmjs.com/package/http-server) package:
 

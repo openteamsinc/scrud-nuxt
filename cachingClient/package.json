@@ -2,7 +2,7 @@
   "name": "caching-client",
   "version": "0.1.0",
   "description": "Example Caching Client (HTTP Client using the Cache API). This example cache any request that is made using the available functions.",
-  "main": "index.js",
+  "main": "lib/index.js",
   "scripts": {
     "test": "jest",
     "build:demo": "babel src/index.js -d demo",
