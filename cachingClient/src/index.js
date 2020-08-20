@@ -92,7 +92,8 @@ class CachingClient extends EventDispatcher{
     
     // Clear the current cache (currentCache)
     clearCache = async () => {
-        return await caches.delete(this.currentCaches[this.currentCache]);
+        return [await caches.delete(this.currentCaches[this.currentCache]),
+                await caches.delete(this.currentCaches[this.currentCacheOptions])];
     }
     
     // Retrieve and cache a response from a new request or retrieve response from cache
@@ -139,9 +140,18 @@ class CachingClient extends EventDispatcher{
             // We need to call .clone() on the response object to save a copy of it to the cache.
             // (https://fetch.spec.whatwg.org/#dom-request-clone)
             if (method == CachingClient.GET || method == CachingClient.PUT || method == CachingClient.OPTIONS ){
+                // Update the cache
                 cache.put(url, fetchResponse.clone());
             } else if (method == CachingClient.DELETE){
+                // Delete the entry from the cache
                 cache.delete(url);
+            } else if (method == CachingClient.POST){
+                // Update the cache if the response has (1) A location header (2) The new resource in the body
+                const locationHeader = fetchResponse.headers.get('Location');
+                const postBody = fetchResponse.clone().body;
+                if (locationHeader && postBody){
+                    cache.put(locationHeader, fetchResponse.clone());
+                }
             }
             const unwrappedResources = await this._getUnwrappedResources(fetchResponse.clone());
             if( unwrappedResources.length > 0 ) {
@@ -149,7 +159,7 @@ class CachingClient extends EventDispatcher{
             }
             if(cachedResponse){
                 // Dispatch event informing of new info cached for the resource
-                this.dispatchEvent(new CustomEvent(url, {detail: { url, response: fetchResponse.clone()}}));
+                this.dispatchEvent(new CustomEvent(url, {detail: { url }}));
             }
         }
     
@@ -177,7 +187,7 @@ class CachingClient extends EventDispatcher{
                 if(!this._cacheUpToDate(unWrappedResponse, cachedResponse)){
                     cache.put(url, unWrappedResponse.clone());
                     // Dispatch event informing of new info cached for a unwrapped resource
-                    this.dispatchEvent(new CustomEvent(url, {detail: { url, response: unWrappedResponse.clone()}}));
+                    this.dispatchEvent(new CustomEvent(url, {detail: { url }}));
                 }
             } else {
                 cache.put(url, unWrappedResponse.clone());
@@ -238,13 +248,14 @@ class CachingClient extends EventDispatcher{
         try{
             // TODO: Add logic to other types of request i.e PUT, DELETE, OPTIONS
             const {method, callback, json} = requestOptions;
-            if ((method == CachingClient.GET || method == CachingClient.POST) && callback){
+            if ((method == CachingClient.GET || method == CachingClient.POST
+                 || method == CachingClient.OPTIONS) && callback){
                 this.addEventListener(url, callback);
             }
             const response = await this.cacheRequest(new Request(url, requestOptions))
             return json? await this._JSONhandleResponse(response): response;
         } catch(err) {
-            //console.error('Error while catching the request', err);
+            console.error('Error while catching the request', err);
             throw err;
         }
     }
