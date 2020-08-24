@@ -104,28 +104,32 @@
       });
 
       _defineProperty(this, "clearCache", async () => {
-        return await caches.delete(this.currentCaches[this.currentCache]);
+        return [await caches.delete(this.currentCaches[this.currentCache]), await caches.delete(this.currentCaches[this.currentCacheOptions])];
       });
 
       _defineProperty(this, "cacheRequest", async request => {
-        const openCacheName = request.method == CachingClient.OPTIONS ? this.currentCaches[this.currentCacheOptions] : this.currentCaches[this.currentCache];
+        const {
+          method,
+          url
+        } = request;
+        const openCacheName = method == CachingClient.OPTIONS ? this.currentCaches[this.currentCacheOptions] : this.currentCaches[this.currentCache];
         const cache = await caches.open(openCacheName);
-        const cachedResponse = await cache.match(request.url);
+        const cachedResponse = await cache.match(url);
 
-        if (cachedResponse && (request.method == CachingClient.GET || request.method == CachingClient.OPTIONS)) {
+        if (cachedResponse && (method == CachingClient.GET || method == CachingClient.OPTIONS)) {
           // If there is an entry in the cache for request.url, then response will be defined
           // and we can just return it for now.
           // e.g do a HEAD request to check cache headers for the resource.
           // console.log(' Found response in cache:', cachedResponse);
-          const headRequest = new Request(request.url, {
+          const headRequest = new Request(url, {
             method: CachingClient.HEAD
           });
           const headResponse = await fetch(headRequest);
 
           if (this._cacheUpToDate(headResponse, cachedResponse)) {
-            return cachedResponse;
+            return cachedResponse.clone();
           }
-        } else if (!cachedResponse && (request.method == CachingClient.PUT || request.method == CachingClient.DELETE)) {
+        } else if (!cachedResponse && (method == CachingClient.PUT || method == CachingClient.DELETE)) {
           throw new Error(`Can't do a ${request.method} without previously having information in the Cache about the resource`);
         } // Otherwise, if there is no entry in the cache for request.url or it needs to be updated, response will be
         // undefined or old, and we need to fetch() the resource.
@@ -148,7 +152,22 @@
           //
           // We need to call .clone() on the response object to save a copy of it to the cache.
           // (https://fetch.spec.whatwg.org/#dom-request-clone)
-          cache.put(request.url, fetchResponse.clone());
+          if (method == CachingClient.GET || method == CachingClient.PUT || method == CachingClient.OPTIONS) {
+            // Update the cache
+            cache.put(url, fetchResponse.clone());
+          } else if (method == CachingClient.DELETE) {
+            // Delete the entry from the cache
+            cache.delete(url);
+          } else if (method == CachingClient.POST) {
+            // Update the cache if the response has (1) A location header (2) The new resource in the body
+            const locationHeader = fetchResponse.headers.get('Location');
+            const postBody = fetchResponse.clone().body;
+
+            if (locationHeader && postBody) {
+              cache.put(locationHeader, fetchResponse.clone());
+            }
+          }
+
           const unwrappedResources = await this._getUnwrappedResources(fetchResponse.clone());
 
           if (unwrappedResources.length > 0) {
@@ -157,9 +176,9 @@
 
           if (cachedResponse) {
             // Dispatch event informing of new info cached for the resource
-            this.dispatchEvent(new CustomEvent(request.url, {
+            this.dispatchEvent(new CustomEvent(url, {
               detail: {
-                url: request.url
+                url
               }
             }));
           }
@@ -204,7 +223,7 @@
 
           if (cachedResponse) {
             if (!this._cacheUpToDate(unWrappedResponse, cachedResponse)) {
-              cache.put(url, unWrappedResponse); // Dispatch event informing of new info cached for a unwrapped resource
+              cache.put(url, unWrappedResponse.clone()); // Dispatch event informing of new info cached for a unwrapped resource
 
               this.dispatchEvent(new CustomEvent(url, {
                 detail: {
@@ -213,7 +232,7 @@
               }));
             }
           } else {
-            cache.put(url, unWrappedResponse);
+            cache.put(url, unWrappedResponse.clone());
           }
         }
       });
@@ -286,7 +305,7 @@
             json
           } = requestOptions;
 
-          if ((method == CachingClient.GET || method == CachingClient.POST) && callback) {
+          if ((method == CachingClient.GET || method == CachingClient.POST || method == CachingClient.OPTIONS) && callback) {
             this.addEventListener(url, callback);
           }
 
@@ -294,6 +313,7 @@
           return json ? await this._JSONhandleResponse(response) : response;
         } catch (err) {
           console.error('Error while catching the request', err);
+          throw err;
         }
       });
 
