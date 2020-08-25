@@ -116,6 +116,11 @@ class CachingClient extends EventDispatcher{
             }
         } else if (!cachedResponse && (method == CachingClient.PUT || method == CachingClient.DELETE)) {
             throw new Error(`Can't do a ${request.method} without previously having information in the Cache about the resource`);
+        } else if (cachedResponse && (method == CachingClient.PUT || method == CachingClient.DELETE)) {
+            const ifMatch = cachedResponse.headers.get('ETag');
+            const ifUnmodifiedSince = cachedResponse.headers.get('Last-Modified');
+            request.headers.append('If-Match', ifMatch);
+            request.headers.append('If-Unmodified-Since', ifUnmodifiedSince);
         }
     
         // Otherwise, if there is no entry in the cache for request.url or it needs to be updated, response will be
