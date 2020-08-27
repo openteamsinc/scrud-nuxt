@@ -430,6 +430,8 @@ describe('caching-client GET', () => {
         const cacheHeaders = _caches['read-through-cache-v1'][unwrappResourceUrl].clone().headers;
         expect(cacheHeaders.get('ETag')).toEqual(unwrappResourceExpectedHeaders['ETag']);
         expect(cacheHeaders.get('Last-modified')).toEqual(unwrappResourceExpectedHeaders['Last-modified']);
+        expect(cacheHeaders.get('etag')).toEqual(unwrappResourceExpectedHeaders['ETag']);
+        expect(cacheHeaders.get('last-modified')).toEqual(unwrappResourceExpectedHeaders['Last-modified']);
     });
 
 });
@@ -615,7 +617,9 @@ describe('caching-client POST', () => {
         expect(await _caches['read-through-cache-v1'][unwrappResourceUrl].clone().json()).toEqual(unwrappResourceExpectedBody);
         const cacheHeaders = _caches['read-through-cache-v1'][unwrappResourceUrl].headers;
         expect(cacheHeaders.get('ETag')).toEqual(unwrappResourceExpectedHeaders['ETag']);
-        expect(cacheHeaders.get('Last-modified')).toEqual(unwrappResourceExpectedHeaders['Last-modified']);
+        expect(cacheHeaders.get('Last-modified')).toEqual(unwrappResourceExpectedHeaders['Last-modified']);        
+        expect(cacheHeaders.get('etag')).toEqual(unwrappResourceExpectedHeaders['ETag']);
+        expect(cacheHeaders.get('last-modified')).toEqual(unwrappResourceExpectedHeaders['Last-modified']);
     });
 
 });
@@ -689,6 +693,12 @@ describe('caching-client DELETE', () => {
       expect(fetch).toHaveBeenCalledTimes(2);
       expect(cacheUpdateHandler).toHaveBeenCalled();
       expect(cacheUpdateHandler).toHaveBeenCalledTimes(1);
+      // Assert headers are being updated ('If-Match', 'If-Unmodified-Since')
+      expect(fetch.mock.calls[1][0].headers.get('If-Match')).toEqual('XXXXX');
+      expect(fetch.mock.calls[1][0].headers.get('If-Unmodified-Since')).toEqual('Mon, 13 July 2020 12:12:12 GMT');
+      // Assert lower case headers
+      expect(fetch.mock.calls[1][0].headers.get('if-match')).toEqual('XXXXX');
+      expect(fetch.mock.calls[1][0].headers.get('if-unmodified-since')).toEqual('Mon, 13 July 2020 12:12:12 GMT');
     });
 
 });
@@ -763,6 +773,12 @@ describe('caching-client PUT', () => {
       expect(fetch).toHaveBeenCalledTimes(2);
       expect(cacheUpdateHandler).toHaveBeenCalled();
       expect(cacheUpdateHandler).toHaveBeenCalledTimes(1);
+      // Assert headers are being updated ('If-Match', 'If-Unmodified-Since')
+      expect(fetch.mock.calls[1][0].headers.get('If-Match')).toEqual('XXXXX');
+      expect(fetch.mock.calls[1][0].headers.get('If-Unmodified-Since')).toEqual('Mon, 13 July 2020 12:12:12 GMT');
+      // Assert lower case headers
+      expect(fetch.mock.calls[1][0].headers.get('if-match')).toEqual('XXXXX');
+      expect(fetch.mock.calls[1][0].headers.get('if-unmodified-since')).toEqual('Mon, 13 July 2020 12:12:12 GMT');
     });
 
 });

@@ -16,7 +16,7 @@ Caching Client (HTTP Client using the Cache API).
     The parameters for the available functions are:
     * `url`: URL to fetch.
     * `body`: Content of the request (in the case of `POST` or `PUT` requests).
-    * `options`: To add or override the options used to fetch the given URL (`headers`, `mode`, `method`, etc.). Also you can add a `json` option if what you want get the response as the JSON parsed body.
+    * `options`: To add or override the options used to fetch the given URL (`headers`, `mode`, `method`, etc.). It is a key-value object. Also you can add a `json` option if you want to get the response JSON parsed body only i.e `{json: true}`
 
 ## Build lib
 
