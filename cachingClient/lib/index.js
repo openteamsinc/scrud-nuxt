@@ -131,6 +131,17 @@
           }
         } else if (!cachedResponse && (method == CachingClient.PUT || method == CachingClient.DELETE)) {
           throw new Error(`Can't do a ${request.method} without previously having information in the Cache about the resource`);
+        } else if (cachedResponse && (method == CachingClient.PUT || method == CachingClient.DELETE)) {
+          const ifMatch = cachedResponse.headers.get(CachingClient.HTTP_HEADERS_ETAG);
+          const ifUnmodifiedSince = cachedResponse.headers.get(CachingClient.HTTP_HEADERS_LAST_MODIFIED);
+
+          if (ifMatch) {
+            request.headers.append(CachingClient.HTTP_HEADERS_IF_MATCH, ifMatch);
+          }
+
+          if (ifUnmodifiedSince) {
+            request.headers.append(CachingClient.HTTP_HEADERS_IF_UNMODIFIED_SINCE, ifUnmodifiedSince);
+          }
         } // Otherwise, if there is no entry in the cache for request.url or it needs to be updated, response will be
         // undefined or old, and we need to fetch() the resource.
         // console.log(' No response for %s found in cache or response stored is old. ' + 'About to fetch from network...', request.url);
@@ -160,7 +171,7 @@
             cache.delete(url);
           } else if (method == CachingClient.POST) {
             // Update the cache if the response has (1) A location header (2) The new resource in the body
-            const locationHeader = fetchResponse.headers.get('Location');
+            const locationHeader = fetchResponse.headers.get(CachingClient.HTTP_HEADERS_LOCATION);
             const postBody = fetchResponse.clone().body;
 
             if (locationHeader && postBody) {
@@ -244,10 +255,9 @@
           url,
           content
         } = envelop;
-        const headers = {
-          ETag: etag,
-          'Last-Modified': last_modified
-        };
+        const headers = {};
+        headers[CachingClient.HTTP_HEADERS_ETAG] = etag;
+        headers[CachingClient.HTTP_HEADERS_LAST_MODIFIED] = last_modified;
         return {
           headers,
           body: JSON.stringify(content),
@@ -288,17 +298,16 @@
       _defineProperty(this, "_cacheUpToDate", (response, cachedResponse) => {
         const headers = response.headers;
         const cacheResponseHeaders = cachedResponse.headers;
-        const lastModifiedHeader = headers.get('Last-Modified');
-        const eTagHeader = headers.get('ETag');
-        const lastModifiedCacheHeader = cacheResponseHeaders.get('Last-Modified');
-        const eTagCacheHeader = cacheResponseHeaders.get('ETag'); // TODO: Check if a better validation is needed
+        const lastModifiedHeader = headers.get(CachingClient.HTTP_HEADERS_LAST_MODIFIED);
+        const eTagHeader = headers.get(CachingClient.HTTP_HEADERS_ETAG);
+        const lastModifiedCacheHeader = cacheResponseHeaders.get(CachingClient.HTTP_HEADERS_LAST_MODIFIED);
+        const eTagCacheHeader = cacheResponseHeaders.get(CachingClient.HTTP_HEADERS_ETAG); // TODO: Check if a better validation is needed
 
         return eTagCacheHeader == eTagHeader && lastModifiedCacheHeader == lastModifiedHeader;
       });
 
       _defineProperty(this, "_httpRequest", async (url, requestOptions) => {
         try {
-          // TODO: Add logic to other types of request i.e PUT, DELETE, OPTIONS
           const {
             method,
             callback,
@@ -319,7 +328,7 @@
 
       _defineProperty(this, "_parseLinkHeader", headers => {
         // Taken from: https://gist.github.com/niallo/3109252#gistcomment-2883309
-        const header = headers.get('Link');
+        const header = headers.get(CachingClient.HTTP_HEADERS_LINK);
 
         if (!header || header.length === 0) {
           return {};
@@ -330,7 +339,7 @@
           const section = part.split(/(?!\B"[^"]*);(?![^"]*"\B)/);
 
           if (section.length < 2) {
-            throw new Error("Section could not be split on ';'");
+            throw new Error("Link header parsing: Section could not be split on ';'");
           }
 
           const url = section[0].replace(/<(.*)>/, '$1').trim();
@@ -370,11 +379,12 @@
       });
 
       _defineProperty(this, "post", async (url, body, options) => {
+        const headers = {};
+        headers[CachingClient.HTTP_HEADERS_CONTENT_TYPE] = 'application/json';
+
         const requestOptions = _objectSpread({
           method: CachingClient.POST,
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers,
           body: JSON.stringify(body)
         }, options);
 
@@ -382,11 +392,12 @@
       });
 
       _defineProperty(this, "put", async (url, body, options) => {
+        const headers = {};
+        headers[CachingClient.HTTP_HEADERS_CONTENT_TYPE] = 'application/json';
+
         const requestOptions = _objectSpread({
           method: CachingClient.PUT,
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers,
           body: JSON.stringify(body)
         }, options);
 
@@ -427,6 +438,20 @@
   _defineProperty(CachingClient, "PUT", 'PUT');
 
   _defineProperty(CachingClient, "DELETE", 'DELETE');
+
+  _defineProperty(CachingClient, "HTTP_HEADERS_CONTENT_TYPE", 'content-type');
+
+  _defineProperty(CachingClient, "HTTP_HEADERS_LINK", 'link');
+
+  _defineProperty(CachingClient, "HTTP_HEADERS_LOCATION", 'location');
+
+  _defineProperty(CachingClient, "HTTP_HEADERS_ETAG", 'etag');
+
+  _defineProperty(CachingClient, "HTTP_HEADERS_LAST_MODIFIED", 'last-modified');
+
+  _defineProperty(CachingClient, "HTTP_HEADERS_IF_MATCH", 'if-match');
+
+  _defineProperty(CachingClient, "HTTP_HEADERS_IF_UNMODIFIED_SINCE", 'if-unmodified-since');
 
   var _default = CachingClient;
   _exports.default = _default;

@@ -57,6 +57,14 @@ class CachingClient extends EventDispatcher{
     static OPTIONS = 'OPTIONS';
     static PUT = 'PUT';
     static DELETE = 'DELETE';
+    static HTTP_HEADERS_CONTENT_TYPE = 'content-type';
+    static HTTP_HEADERS_LINK = 'link';
+    static HTTP_HEADERS_LOCATION = 'location';
+    static HTTP_HEADERS_ETAG = 'etag';
+    static HTTP_HEADERS_LAST_MODIFIED = 'last-modified';
+    static HTTP_HEADERS_IF_MATCH = 'if-match';
+    static HTTP_HEADERS_IF_UNMODIFIED_SINCE = 'if-unmodified-since';
+
     constructor(cacheVersion=1, currentCache='read-through',
                 jsonSchemaRelHeader='rel=\'describedBy\'',
                 jsonSchemaEnvelopType='https://api.openteams.com/json-schema/Envelope'){
@@ -117,13 +125,13 @@ class CachingClient extends EventDispatcher{
         } else if (!cachedResponse && (method == CachingClient.PUT || method == CachingClient.DELETE)) {
             throw new Error(`Can't do a ${request.method} without previously having information in the Cache about the resource`);
         } else if (cachedResponse && (method == CachingClient.PUT || method == CachingClient.DELETE)) {
-            const ifMatch = cachedResponse.headers.get('ETag');
-            const ifUnmodifiedSince = cachedResponse.headers.get('Last-Modified');
+            const ifMatch = cachedResponse.headers.get(CachingClient.HTTP_HEADERS_ETAG);
+            const ifUnmodifiedSince = cachedResponse.headers.get(CachingClient.HTTP_HEADERS_LAST_MODIFIED);
             if (ifMatch) {
-                request.headers.append('If-Match', ifMatch);
+                request.headers.append(CachingClient.HTTP_HEADERS_IF_MATCH, ifMatch);
             }
             if (ifUnmodifiedSince) {
-                request.headers.append('If-Unmodified-Since', ifUnmodifiedSince);
+                request.headers.append(CachingClient.HTTP_HEADERS_IF_UNMODIFIED_SINCE, ifUnmodifiedSince);
             }
         }
     
@@ -156,7 +164,7 @@ class CachingClient extends EventDispatcher{
                 cache.delete(url);
             } else if (method == CachingClient.POST){
                 // Update the cache if the response has (1) A location header (2) The new resource in the body
-                const locationHeader = fetchResponse.headers.get('Location');
+                const locationHeader = fetchResponse.headers.get(CachingClient.HTTP_HEADERS_LOCATION);
                 const postBody = fetchResponse.clone().body;
                 if (locationHeader && postBody){
                     cache.put(locationHeader, fetchResponse.clone());
@@ -207,8 +215,10 @@ class CachingClient extends EventDispatcher{
     // Extract information from an envelop. Get the headers, body and url from the envelop provided.
     _getUnwrappedEnvelop = (envelop) => {
         const {etag, last_modified, url, content} = envelop;
-        const headers = {ETag: etag, 'Last-Modified': last_modified}
-    
+        const headers = {};
+        headers[CachingClient.HTTP_HEADERS_ETAG] = etag;
+        headers[CachingClient.HTTP_HEADERS_LAST_MODIFIED] = last_modified;
+
         return {headers,
                 body: JSON.stringify(content),
                 url};
@@ -244,10 +254,10 @@ class CachingClient extends EventDispatcher{
     _cacheUpToDate = (response, cachedResponse) => {
         const headers = response.headers;
         const cacheResponseHeaders = cachedResponse.headers;
-        const lastModifiedHeader = headers.get('Last-Modified');
-        const eTagHeader = headers.get('ETag');
-        const lastModifiedCacheHeader = cacheResponseHeaders.get('Last-Modified');
-        const eTagCacheHeader = cacheResponseHeaders.get('ETag');
+        const lastModifiedHeader = headers.get(CachingClient.HTTP_HEADERS_LAST_MODIFIED);
+        const eTagHeader = headers.get(CachingClient.HTTP_HEADERS_ETAG);
+        const lastModifiedCacheHeader = cacheResponseHeaders.get(CachingClient.HTTP_HEADERS_LAST_MODIFIED);
+        const eTagCacheHeader = cacheResponseHeaders.get(CachingClient.HTTP_HEADERS_ETAG);
         // TODO: Check if a better validation is needed
         return eTagCacheHeader == eTagHeader && lastModifiedCacheHeader == lastModifiedHeader;
     }
@@ -255,7 +265,6 @@ class CachingClient extends EventDispatcher{
     // Logic handler of the different HTTP Requests available
     _httpRequest = async (url, requestOptions) => {
         try{
-            // TODO: Add logic to other types of request i.e PUT, DELETE, OPTIONS
             const {method, callback, json} = requestOptions;
             if ((method == CachingClient.GET || method == CachingClient.POST
                  || method == CachingClient.OPTIONS) && callback){
@@ -272,7 +281,7 @@ class CachingClient extends EventDispatcher{
     // Parse link headers and retrieve an object {rel0: url0, rel1: url1}
     _parseLinkHeader = (headers) => {
         // Taken from: https://gist.github.com/niallo/3109252#gistcomment-2883309
-        const header = headers.get('Link');
+        const header = headers.get(CachingClient.HTTP_HEADERS_LINK);
         if (!header || header.length === 0) {
             return {};
         }    
@@ -280,7 +289,7 @@ class CachingClient extends EventDispatcher{
         const found = header.split(/(?!\B"[^"]*),(?![^"]*"\B)/).reduce((links, part) => {
             const section = part.split(/(?!\B"[^"]*);(?![^"]*"\B)/);
             if (section.length < 2) {
-                throw new Error("Section could not be split on ';'");
+                throw new Error("Link header parsing: Section could not be split on ';'");
             }
             const url = section[0].replace(/<(.*)>/, '$1').trim();
             const name = section[1].replace(/rel="(.*)"/, '$1').trim();
@@ -321,9 +330,11 @@ class CachingClient extends EventDispatcher{
     }
     
     post = async (url, body, options) => {
+        const headers = {};
+        headers[CachingClient.HTTP_HEADERS_CONTENT_TYPE] = 'application/json';
         const requestOptions = {
             method: CachingClient.POST,
-            headers: { 'Content-Type': 'application/json' },
+            headers,
             body: JSON.stringify(body),
             ...options
         };
@@ -331,9 +342,11 @@ class CachingClient extends EventDispatcher{
     }
     
     put = async (url, body, options) => {
+        const headers = {};
+        headers[CachingClient.HTTP_HEADERS_CONTENT_TYPE] = 'application/json';
         const requestOptions = {
             method: CachingClient.PUT,
-            headers: { 'Content-Type': 'application/json' },
+            headers,
             body: JSON.stringify(body),
             ...options
         };
