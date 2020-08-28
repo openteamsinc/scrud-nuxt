@@ -1,5 +1,19 @@
 <template>
   <div>
+    <b-navbar toggleable="lg" type="dark" variant="info">
+      <b-navbar-brand href="/">Scrud Nuxt</b-navbar-brand>
+
+      <b-navbar-toggle target="nav-collapse"></b-navbar-toggle>
+
+      <b-collapse id="nav-collapse" is-nav>
+        <b-navbar-nav>
+          <b-nav-item-dropdown text="Examples">
+            <b-dropdown-item href="/partner-profile">Partner Profile</b-dropdown-item>
+          </b-nav-item-dropdown>
+        </b-navbar-nav>
+      </b-collapse>
+
+    </b-navbar>
     <Nuxt />
   </div>
 </template>

@@ -1,34 +1,19 @@
 <template>
   <div class="container">
-    <div>
-      <Logo />
-      <h1 class="title">
-        scrud-nuxt
-      </h1>
-      <div class="links">
-        <a
-          href="https://nuxtjs.org/"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="button--green"
-        >
-          Documentation
-        </a>
-        <a
-          href="https://github.com/nuxt/nuxt.js"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="button--grey"
-        >
-          GitHub
-        </a>
-      </div>
+    <div class="subtitle">
+      Scrud Nuxt
     </div>
   </div>
 </template>
 
 <script>
-export default {}
+
+  export default {
+    data () {
+      return {
+      }
+    }
+  }
 </script>
 
 <style>
@@ -38,20 +23,12 @@ export default {}
   display: flex;
   justify-content: center;
   align-items: center;
-  text-align: center;
+  text-align: left;
 }
 
 .title {
-  font-family:
-    'Quicksand',
-    'Source Sans Pro',
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    Roboto,
-    'Helvetica Neue',
-    Arial,
-    sans-serif;
+  font-family: "Quicksand", "Source Sans Pro", -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   display: block;
   font-weight: 300;
   font-size: 100px;

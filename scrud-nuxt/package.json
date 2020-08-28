@@ -1,25 +1,30 @@
 {
-  "name": "scrud-nuxt",
-  "version": "1.0.0",
-  "private": true,
-  "scripts": {
-    "dev": "nuxt",
-    "build": "nuxt build",
-    "start": "nuxt start",
-    "export": "nuxt export",
-    "serve": "nuxt serve",
-    "test": "jest"
-  },
-  "dependencies": {
-    "bootstrap": "^4.5.0",
-    "bootstrap-vue": "^2.15.0",
-    "nuxt": "^2.13.0"
-  },
-  "devDependencies": {
-    "@vue/test-utils": "^1.0.3",
-    "babel-core": "7.0.0-bridge.0",
-    "babel-jest": "^26.0.1",
-    "jest": "^26.0.1",
-    "vue-jest": "^3.0.4"
-  }
+    "name": "scrud-nuxt",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+        "dev": "nuxt",
+        "build": "nuxt build",
+        "start": "nuxt start",
+        "export": "nuxt export",
+        "serve": "nuxt serve",
+        "test": "jest"
+    },
+    "dependencies": {
+        "@vue/babel-helper-vue-jsx-merge-props": "^1.0.0",
+        "@vue/babel-preset-jsx": "^1.1.2",
+        "bootstrap": "^4.5.0",
+        "bootstrap-vue": "^2.15.0",
+        "caching-client": "file:../cachingClient",
+        "lodash": "^4.17.19",
+        "nuxt": "^2.13.0",
+        "vue-form-json-schema": "^2.8.2"
+    },
+    "devDependencies": {
+        "@vue/test-utils": "^1.0.3",
+        "babel-core": "7.0.0-bridge.0",
+        "babel-jest": "^26.0.1",
+        "jest": "^26.0.1",
+        "vue-jest": "^3.0.4"
+    }
 }
