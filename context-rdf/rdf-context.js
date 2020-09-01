@@ -5,7 +5,7 @@ const fs = require('fs');
 function RdfContext() {
 
   // Not functional, need endpoints to be implemented to test. Currently using local files and the fs library
-  this.lookup = (jsonpath, contextUrl) => {
+  this.lookup = (jsonpath, contextUrl, callbackResourceSolver) => {
     return new Promise(resolve => {
       const parser = new JsonLdParser();
 
@@ -26,21 +26,24 @@ function RdfContext() {
   }
 
   // Not functional, need endpoints to be implemented to test. Currently using local files and the fs library
-  this.supertype = (type, contextUrl, schemaUrl) => {
-    return new Promise(resolve => {
-      const parser = new JsonLdParser();
-
-      // TODO: Change to make an http request to get the context when endpoints are implemented
-      const stream = fs.createReadStream('../jsonld-tests/tree.jsonld');
-
-      parser.import(stream)
-        .on('data', (quad) => {
-          let value = quad['subject']['value'];
-
-          if (value === type && supertype(quad)) {
-            resolve(quad['object']['value']);
-          }
-        })
+  this.supertype = async (type, contextUrl, schemaUrl, callbackResourceResolver) => {
+    const parser = new JsonLdParser();
+    // TODO: Change to make an http request to get the context when endpoints are implemented
+    const stream = await callbackResourceResolver(contextUrl); //fs.createReadStream('../jsonld-tests/tree.jsonld')
+    return new Promise((resolve, reject) => {
+        parser.import(stream)
+              .on('data', (quad) => {
+                let value = quad['subject']['value'];
+                if (value === type && supertype(quad)) {
+                  resolve(quad['object']['value']);
+                }
+              })
+              .on('error', function(err){
+                reject(err);
+              })
+              .on('end', function(){
+                resolve({});
+              })
     })
   }
 
