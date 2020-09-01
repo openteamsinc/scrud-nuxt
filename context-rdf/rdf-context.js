@@ -42,7 +42,7 @@ function RdfContext() {
                 reject(err);
               })
               .on('end', function(){
-                resolve({});
+                resolve('');
               })
     })
   }

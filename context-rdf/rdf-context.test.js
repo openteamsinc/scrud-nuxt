@@ -10,18 +10,19 @@ const onlineResourceSolver = async (resourceURL) => {
     return response.body;
 }
 describe('Supertype tests', () => {
-    it('Get supertype using offline context - file', async () => {
+    it('Get supertypes using offline context - file', async () => {
         const context = new RdfContext();
-        const subClass = await context.supertype('Person', './jsonld-tests/tree.jsonld', null, offlineResourceSolver);
+        const subclassOf = await context.supertype(
+            'http://schema.org/Vehicle', './jsonld-tests/tree.jsonld', null, offlineResourceSolver);
         // TODO: Change expected value when updating the jsonld file or add another test using a file that returns a different response
-        expect(subClass).toEqual({});
+        expect(subclassOf).toEqual('http://schema.org/Product');
       });
     
-    it('Get supertype using online context - HTTP request', async () => {
+    it('Get supertypes using online context - HTTP request', async () => {
         const context = fs.createReadStream('./jsonld-tests/tree.jsonld');
         fetch.mockOnce(context);
-        const isSubclass = await (new RdfContext()).supertype(
-            'Person', 'http://mock.com/api/jsonld-tests/tree.jsonld', null, onlineResourceSolver);
-        expect(isSubclass).toEqual({});
+        const subclassOf = await (new RdfContext()).supertype(
+            'http://schema.org/Vehicle', 'http://mock.com/api/jsonld-tests/tree.jsonld', null, onlineResourceSolver);
+        expect(subclassOf).toEqual('http://schema.org/Product');
       });
 })
