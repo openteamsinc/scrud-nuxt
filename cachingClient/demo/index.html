@@ -8,21 +8,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <title>CachingClient Sample: Read-through Caching</title>
-    <script type="text/javascript" src="cachingClient.js"></script>
+    <script type="text/javascript" src="index.js"></script>
   </head>
 
   <body>
     <h1>CachingClient Sample: Read-through Caching</h1>
     <h2>Source code</h3>
     <p> 
-        <code><a href="cachingClient.js">cachingClient.js</a></code>
+        <code><a href="index.js">index.js</a></code>
     </p>
     <h2>Use the devtools of the browser to interact with the cachingClient</h3>
     <p>
         For example you can try in the console:
         <p>
             <code>
-                await cachingClient.get("https://jsonplaceholder.typicode.com/users/1/todos", true)
+                client = new cachingClient.default();
+            </code>
+            <code>
+                await client.get("https://jsonplaceholder.typicode.com/users/1/todos", {json:true});
             </code>
         </p>
         To check a dummy JSON of a list of todos.
@@ -31,7 +34,7 @@
         Also, you can use:
         <p>
             <code>
-                await cachingClient.clearCache();
+                await client.clearCache();
             </code>
         </p>
         To clear/empty the cache.
