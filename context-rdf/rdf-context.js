@@ -28,8 +28,7 @@ function RdfContext() {
   // Not functional, need endpoints to be implemented to test. Currently using local files and the fs library
   this.supertype = async (type, contextUrl, schemaUrl, callbackResourceResolver) => {
     const parser = new JsonLdParser();
-    // TODO: Change to make an http request to get the context when endpoints are implemented
-    const stream = await callbackResourceResolver(contextUrl); //fs.createReadStream('../jsonld-tests/tree.jsonld')
+    const stream = await callbackResourceResolver(contextUrl);
     return new Promise((resolve, reject) => {
         parser.import(stream)
               .on('data', (quad) => {
