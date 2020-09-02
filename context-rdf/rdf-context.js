@@ -25,8 +25,11 @@ function RdfContext() {
     })
   }
 
-  // Not functional, need endpoints to be implemented to test. Currently using local files and the fs library
-  this.supertype = async (type, contextUrl, schemaUrl, callbackResourceResolver) => {
+  // Get the supertype of a given type giving a path to the ld context source and using to retrieve such context source
+  // a given callback function i.e:
+  // ('http://schema.org/Vehicle', './jsonld-tests/tree.jsonld', callbackFileResolver) -> 'http://schema.org/Product'
+  // ('http://schema.org/Vehicle', 'http://mock.com/api/jsonld-tests/tree.jsonld', callbackHTTPResolver) -> 'http://schema.org/Product'
+  this.supertype = async (type, contextUrl, callbackResourceResolver) => {
     const parser = new JsonLdParser();
     const stream = await callbackResourceResolver(contextUrl);
     return new Promise((resolve, reject) => {
