@@ -7,7 +7,7 @@
     "test": "jest"
   },
   "author": "openteams",
-  "license": "ISC",
+  "license": "BSD-3-Clause",
   "dependencies": {
     "jsonld-streaming-parser": "^2.0.2",
     "jsonpath-plus": "^4.0.0"

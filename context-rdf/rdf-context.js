@@ -4,29 +4,36 @@ const fs = require('fs');
 
 function RdfContext() {
 
-  // Not functional, need endpoints to be implemented to test. Currently using local files and the fs library
-  this.lookup = (jsonpath, contextUrl, callbackResourceSolver) => {
-    return new Promise(resolve => {
-      const parser = new JsonLdParser();
+  // Get the context-type URI for a given 'jsonpath' parsing the 'jsonld' specified
+  // ('$', {
+  //        "@context": "https://schema.org",
+  //        "@type": "Person",
+  //        "address": {
+  //            "@type": "PostalAddress",
+  //            "addressLocality": "Colorado Springs",
+  //            "addressRegion": "CO",
+  //            "postalCode": "80840",
+  //            "streetAddress": "100 Main Street"
+  //          },
+  //        })
+  this.lookup = async (jsonpath, jsonld) => {
+    const parsedPath = JSONPath({
+      path: jsonpath,
+      json: jsonld
+    });
+    const context = jsonld['@context'];
+    const types = parsedPath.map((result)=>{return result['@type']});
+    if (context && types.length){
+      const contextTypes = types.map((type) => {return `${context}/${type}`});
+      return contextTypes;
+    } else {
+      throw new Error(`Failed to parse the resource context and types: Context=${context}; Types=${types}`)
+    }
 
-      let context = fs.readFileSync('../jsonld-tests/example-semantic-context.json');
-
-      let parsed = JSONPath({
-        path: jsonpath,
-        json: context
-      });
-
-      let contextLd = fs.createReadStream('../jsonld-tests/example-semantic-context.json');
-
-      parser.import(contextLd)
-        .on('data', (quad) => {
-          resolve(quad)
-        })
-    })
   }
 
   // Get the supertype of a given type giving a path to the ld context source and using to retrieve such context source
-  // a given callback function i.e:
+  // a given callback function:
   // ('http://schema.org/Vehicle', './jsonld-tests/tree.jsonld', callbackFileResolver) -> 'http://schema.org/Product'
   // ('http://schema.org/Vehicle', 'http://mock.com/api/jsonld-tests/tree.jsonld', callbackHTTPResolver) -> 'http://schema.org/Product'
   this.supertype = async (type, contextUrl, callbackResourceResolver) => {

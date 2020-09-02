@@ -8,7 +8,24 @@ const offlineResourceSolver = (resourceURL) => {
 const onlineResourceSolver = async (resourceURL) => {
     const response = await fetch(resourceURL, {method: 'GET'});
     return response.body;
-}
+};
+
+describe('Lookup tests', () => {
+    it('Get context-type URI/URL - $', async () => {
+        const context = new RdfContext();
+        const jsonpath = '$';
+        const jsonld = JSON.parse(fs.readFileSync('./jsonld-tests/example-semantic-context.json', 'utf-8'));
+        const contextType = await context.lookup(jsonpath, jsonld);
+        expect(contextType).toEqual(['https://schema.org/Person']);
+      });
+    it('Get context-type URI/URL - $.address', async () => {
+        const context = new RdfContext();
+        const jsonpath = '$.address';
+        const jsonld = JSON.parse(fs.readFileSync('./jsonld-tests/example-semantic-context.json', 'utf-8'));
+        const contextType = await context.lookup(jsonpath, jsonld);
+        expect(contextType).toEqual(['https://schema.org/PostalAddress']);
+      });
+});
 
 describe('Supertype tests', () => {
     it('Get supertypes using offline context - file - with supertype', async () => {
@@ -40,4 +57,4 @@ describe('Supertype tests', () => {
         'http://schema.org/Thing', 'http://mock.com/api/jsonld-tests/tree.jsonld', onlineResourceSolver);
     expect(subclassOf).toEqual('');
     });
-})
+});
