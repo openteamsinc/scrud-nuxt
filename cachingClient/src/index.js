@@ -58,10 +58,10 @@ class CachingClient extends EventDispatcher{
     static PUT = 'PUT';
     static DELETE = 'DELETE';
     static HTTP_HEADERS_CONTENT_TYPE = 'content-type';
-    static HTTP_HEADERS_LINK = 'link';
+    static HTTP_HEADERS_LINK = 'Link';
     static HTTP_HEADERS_LOCATION = 'location';
     static HTTP_HEADERS_ETAG = 'ETag';
-    static HTTP_HEADERS_LAST_MODIFIED = 'last-modified';
+    static HTTP_HEADERS_LAST_MODIFIED = 'Last-Modified';
     static HTTP_HEADERS_IF_MATCH = 'If-Match';
     static HTTP_HEADERS_IF_UNMODIFIED_SINCE = 'If-Unmodified-Since';
 
@@ -125,7 +125,7 @@ class CachingClient extends EventDispatcher{
         } else if (!cachedResponse && (method == CachingClient.PUT || method == CachingClient.DELETE)) {
             throw new Error(`Can't do a ${request.method} without previously having information in the Cache about the resource`);
         } else if (cachedResponse && (method == CachingClient.PUT || method == CachingClient.DELETE)) {
-            throw new Error( `${cachedResponse.headers.get(CachingClient.HTTP_HEADERS_ETAG)}`);
+            console.log('ETAG', `${cachedResponse.headers.get(CachingClient.HTTP_HEADERS_ETAG)}`);
             const ifMatch = cachedResponse.headers.get(CachingClient.HTTP_HEADERS_ETAG);
             const ifUnmodifiedSince = cachedResponse.headers.get(CachingClient.HTTP_HEADERS_LAST_MODIFIED);
             if (ifMatch) {
@@ -144,6 +144,7 @@ class CachingClient extends EventDispatcher{
         // Both fetch() and cache.put() "consume" the request, so we need to make a copy.
         // (see https://fetch.spec.whatwg.org/#dom-request-clone)
         const fetchResponse = await fetch(request.clone());
+        console.log('FETCH LINK', fetchResponse.headers.get(CachingClient.HTTP_HEADERS_LINK))
         // console.log('  Response for %s from network is: %O', request.url, fetchResponse);
     
         // Optional: Add in extra conditions here, e.g. response.type == 'basic' to only cache
@@ -165,7 +166,7 @@ class CachingClient extends EventDispatcher{
                 cache.delete(url);
             } else if (method == CachingClient.POST){
                 // Update the cache if the response has (1) A location header (2) The new resource in the body
-                const locationHeader = fetchResponse.headers.get(CachingClient.HTTP_HEADERS_LOCATION);
+                const locationHeader = fetchResponse.clone().headers.get(CachingClient.HTTP_HEADERS_LOCATION);
                 const postBody = fetchResponse.clone().body;
                 if (locationHeader && postBody){
                     cache.put(locationHeader, fetchResponse.clone());
@@ -217,7 +218,7 @@ class CachingClient extends EventDispatcher{
     _getUnwrappedEnvelop = (envelop) => {
         const {etag, last_modified, url, content} = envelop;
         const headers = {};
-        headers[CachingClient.HTTP_HEADERS_ETAG] = ETag;
+        headers[CachingClient.HTTP_HEADERS_ETAG] = etag;
         headers[CachingClient.HTTP_HEADERS_LAST_MODIFIED] = last_modified;
 
         return {headers,
@@ -228,8 +229,10 @@ class CachingClient extends EventDispatcher{
     // Detect that a response is an Envelop and retrieve a list of unwrapped envelopes if needed.
      _getUnwrappedResources = async (response) => {
         const responseLinks = this._parseLinkHeader(response.headers);
+        console.log('LINKS', responseLinks);
         const jsonSchemaURI = responseLinks[this.jsonSchemaRelHeader];
         const unwrappedResources = [];
+        console.log('URI', jsonSchemaURI);
         if(jsonSchemaURI && jsonSchemaURI !== response.url){
             const schema = await this.get(jsonSchemaURI, {json: true});
             const schemaId = schema.$id;
@@ -283,6 +286,7 @@ class CachingClient extends EventDispatcher{
     _parseLinkHeader = (headers) => {
         // Taken from: https://gist.github.com/niallo/3109252#gistcomment-2883309
         const header = headers.get(CachingClient.HTTP_HEADERS_LINK);
+        console.log('HEADER', header);
         if (!header || header.length === 0) {
             return {};
         }    

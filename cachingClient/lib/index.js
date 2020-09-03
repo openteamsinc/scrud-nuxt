@@ -132,7 +132,7 @@
         } else if (!cachedResponse && (method == CachingClient.PUT || method == CachingClient.DELETE)) {
           throw new Error(`Can't do a ${request.method} without previously having information in the Cache about the resource`);
         } else if (cachedResponse && (method == CachingClient.PUT || method == CachingClient.DELETE)) {
-          throw new Error(`${cachedResponse.headers.get(CachingClient.HTTP_HEADERS_ETAG)}`);
+          console.log('ETAG', `${cachedResponse.headers.get(CachingClient.HTTP_HEADERS_ETAG)}`);
           const ifMatch = cachedResponse.headers.get(CachingClient.HTTP_HEADERS_ETAG);
           const ifUnmodifiedSince = cachedResponse.headers.get(CachingClient.HTTP_HEADERS_LAST_MODIFIED);
 
@@ -151,7 +151,8 @@
         // (see https://fetch.spec.whatwg.org/#dom-request-clone)
 
 
-        const fetchResponse = await fetch(request.clone()); // console.log('  Response for %s from network is: %O', request.url, fetchResponse);
+        const fetchResponse = await fetch(request.clone());
+        console.log('FETCH LINK', fetchResponse.headers.get(CachingClient.HTTP_HEADERS_LINK)); // console.log('  Response for %s from network is: %O', request.url, fetchResponse);
         // Optional: Add in extra conditions here, e.g. response.type == 'basic' to only cache
         // responses from the same domain. See https://fetch.spec.whatwg.org/#concept-response-type
 
@@ -172,7 +173,7 @@
             cache.delete(url);
           } else if (method == CachingClient.POST) {
             // Update the cache if the response has (1) A location header (2) The new resource in the body
-            const locationHeader = fetchResponse.headers.get(CachingClient.HTTP_HEADERS_LOCATION);
+            const locationHeader = fetchResponse.clone().headers.get(CachingClient.HTTP_HEADERS_LOCATION);
             const postBody = fetchResponse.clone().body;
 
             if (locationHeader && postBody) {
@@ -257,7 +258,7 @@
           content
         } = envelop;
         const headers = {};
-        headers[CachingClient.HTTP_HEADERS_ETAG] = ETag;
+        headers[CachingClient.HTTP_HEADERS_ETAG] = etag;
         headers[CachingClient.HTTP_HEADERS_LAST_MODIFIED] = last_modified;
         return {
           headers,
@@ -269,8 +270,10 @@
       _defineProperty(this, "_getUnwrappedResources", async response => {
         const responseLinks = this._parseLinkHeader(response.headers);
 
+        console.log('LINKS', responseLinks);
         const jsonSchemaURI = responseLinks[this.jsonSchemaRelHeader];
         const unwrappedResources = [];
+        console.log('URI', jsonSchemaURI);
 
         if (jsonSchemaURI && jsonSchemaURI !== response.url) {
           const schema = await this.get(jsonSchemaURI, {
@@ -330,6 +333,7 @@
       _defineProperty(this, "_parseLinkHeader", headers => {
         // Taken from: https://gist.github.com/niallo/3109252#gistcomment-2883309
         const header = headers.get(CachingClient.HTTP_HEADERS_LINK);
+        console.log('HEADER', header);
 
         if (!header || header.length === 0) {
           return {};
@@ -442,13 +446,13 @@
 
   _defineProperty(CachingClient, "HTTP_HEADERS_CONTENT_TYPE", 'content-type');
 
-  _defineProperty(CachingClient, "HTTP_HEADERS_LINK", 'link');
+  _defineProperty(CachingClient, "HTTP_HEADERS_LINK", 'Link');
 
   _defineProperty(CachingClient, "HTTP_HEADERS_LOCATION", 'location');
 
   _defineProperty(CachingClient, "HTTP_HEADERS_ETAG", 'ETag');
 
-  _defineProperty(CachingClient, "HTTP_HEADERS_LAST_MODIFIED", 'last-modified');
+  _defineProperty(CachingClient, "HTTP_HEADERS_LAST_MODIFIED", 'Last-Modified');
 
   _defineProperty(CachingClient, "HTTP_HEADERS_IF_MATCH", 'If-Match');
 

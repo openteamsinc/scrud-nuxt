@@ -1,6 +1,9 @@
 import CachingClient from 'caching-client'
 
-const cachingClient = new CachingClient()
+const cachingClient = new CachingClient(1,
+                                        'read-through',
+                                        'describedBy',
+                                        'http://localhost:8123/json-schema/PartnerProfile')
 
 export default class DemoService {
 

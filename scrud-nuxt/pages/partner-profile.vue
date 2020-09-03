@@ -80,7 +80,7 @@
     methods: {
       createPartnerProfile (evt) {
         evt.preventDefault()
-        this.service.createPartnerProfile(this.data)
+        service.createPartnerProfile(this.data)
       },
       mapResourses (res) {
         let children = []
