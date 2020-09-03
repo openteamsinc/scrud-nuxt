@@ -132,6 +132,7 @@
         } else if (!cachedResponse && (method == CachingClient.PUT || method == CachingClient.DELETE)) {
           throw new Error(`Can't do a ${request.method} without previously having information in the Cache about the resource`);
         } else if (cachedResponse && (method == CachingClient.PUT || method == CachingClient.DELETE)) {
+          throw new Error(`${cachedResponse.headers.get(CachingClient.HTTP_HEADERS_ETAG)}`);
           const ifMatch = cachedResponse.headers.get(CachingClient.HTTP_HEADERS_ETAG);
           const ifUnmodifiedSince = cachedResponse.headers.get(CachingClient.HTTP_HEADERS_LAST_MODIFIED);
 
@@ -256,7 +257,7 @@
           content
         } = envelop;
         const headers = {};
-        headers[CachingClient.HTTP_HEADERS_ETAG] = etag;
+        headers[CachingClient.HTTP_HEADERS_ETAG] = ETag;
         headers[CachingClient.HTTP_HEADERS_LAST_MODIFIED] = last_modified;
         return {
           headers,
@@ -445,13 +446,13 @@
 
   _defineProperty(CachingClient, "HTTP_HEADERS_LOCATION", 'location');
 
-  _defineProperty(CachingClient, "HTTP_HEADERS_ETAG", 'etag');
+  _defineProperty(CachingClient, "HTTP_HEADERS_ETAG", 'ETag');
 
   _defineProperty(CachingClient, "HTTP_HEADERS_LAST_MODIFIED", 'last-modified');
 
-  _defineProperty(CachingClient, "HTTP_HEADERS_IF_MATCH", 'if-match');
+  _defineProperty(CachingClient, "HTTP_HEADERS_IF_MATCH", 'If-Match');
 
-  _defineProperty(CachingClient, "HTTP_HEADERS_IF_UNMODIFIED_SINCE", 'if-unmodified-since');
+  _defineProperty(CachingClient, "HTTP_HEADERS_IF_UNMODIFIED_SINCE", 'If-Unmodified-Since');
 
   var _default = CachingClient;
   _exports.default = _default;

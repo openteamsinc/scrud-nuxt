@@ -43,6 +43,7 @@
   import ScrudComponent from '~/components/ScrudComponent'
 
   import DemoService from '~/services/DemoService'
+  const service = new DemoService()
 
   export default {
     data () {
@@ -67,9 +68,9 @@
     },
     mounted () {
       this.$cachingClient.clearCache()
-      const service = new DemoService()
       service.getPartnerProfiles()
         .then(res => {
+          if (res.content.length > 0)
           this.mapResourses(res.content)
         })
     },
@@ -78,22 +79,21 @@
     },
     methods: {
       createPartnerProfile (evt) {
-        const service = new DemoService()
         evt.preventDefault()
-        console.log(this.data)
-        service.createPartnerProfile(this.data)
+        this.service.createPartnerProfile(this.data)
       },
       mapResourses (res) {
         let children = []
         console.log('res', res)
         res.forEach(elem => {
-          console.log(elem.content.displayName)
+          console.log(elem)
           children.push({
             component: 'PartnerProfile',
             fieldOptions: {
               props: {
                 displayName: elem.content.displayName,
-                logo: elem.content.logo || 'http://bamflash.com/wp-content/uploads/2013/05/placeholder.png'
+                logo: elem.content.logo || 'http://bamflash.com/wp-content/uploads/2013/05/placeholder.png',
+                url: elem.href
               }
             }
           })

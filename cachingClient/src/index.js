@@ -60,10 +60,10 @@ class CachingClient extends EventDispatcher{
     static HTTP_HEADERS_CONTENT_TYPE = 'content-type';
     static HTTP_HEADERS_LINK = 'link';
     static HTTP_HEADERS_LOCATION = 'location';
-    static HTTP_HEADERS_ETAG = 'etag';
+    static HTTP_HEADERS_ETAG = 'ETag';
     static HTTP_HEADERS_LAST_MODIFIED = 'last-modified';
-    static HTTP_HEADERS_IF_MATCH = 'if-match';
-    static HTTP_HEADERS_IF_UNMODIFIED_SINCE = 'if-unmodified-since';
+    static HTTP_HEADERS_IF_MATCH = 'If-Match';
+    static HTTP_HEADERS_IF_UNMODIFIED_SINCE = 'If-Unmodified-Since';
 
     constructor(cacheVersion=1, currentCache='read-through',
                 jsonSchemaRelHeader='rel=\'describedBy\'',
@@ -125,6 +125,7 @@ class CachingClient extends EventDispatcher{
         } else if (!cachedResponse && (method == CachingClient.PUT || method == CachingClient.DELETE)) {
             throw new Error(`Can't do a ${request.method} without previously having information in the Cache about the resource`);
         } else if (cachedResponse && (method == CachingClient.PUT || method == CachingClient.DELETE)) {
+            throw new Error( `${cachedResponse.headers.get(CachingClient.HTTP_HEADERS_ETAG)}`);
             const ifMatch = cachedResponse.headers.get(CachingClient.HTTP_HEADERS_ETAG);
             const ifUnmodifiedSince = cachedResponse.headers.get(CachingClient.HTTP_HEADERS_LAST_MODIFIED);
             if (ifMatch) {
@@ -216,7 +217,7 @@ class CachingClient extends EventDispatcher{
     _getUnwrappedEnvelop = (envelop) => {
         const {etag, last_modified, url, content} = envelop;
         const headers = {};
-        headers[CachingClient.HTTP_HEADERS_ETAG] = etag;
+        headers[CachingClient.HTTP_HEADERS_ETAG] = ETag;
         headers[CachingClient.HTTP_HEADERS_LAST_MODIFIED] = last_modified;
 
         return {headers,
