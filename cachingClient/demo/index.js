@@ -121,8 +121,11 @@
           // and we can just return it for now.
           // e.g do a HEAD request to check cache headers for the resource.
           // console.log(' Found response in cache:', cachedResponse);
+          const headHeaders = {};
+          headHeaders[CachingClient.HTTP_HEADERS_CACHE_CONTROL] = 'no-store';
           const headRequest = new Request(url, {
-            method: CachingClient.HEAD
+            method: CachingClient.HEAD,
+            headers: headHeaders
           });
           const headResponse = await fetch(headRequest);
 
@@ -132,7 +135,6 @@
         } else if (!cachedResponse && (method == CachingClient.PUT || method == CachingClient.DELETE)) {
           throw new Error(`Can't do a ${request.method} without previously having information in the Cache about the resource`);
         } else if (cachedResponse && (method == CachingClient.PUT || method == CachingClient.DELETE)) {
-          console.log('ETAG', `${cachedResponse.headers.get(CachingClient.HTTP_HEADERS_ETAG)}`);
           const ifMatch = cachedResponse.headers.get(CachingClient.HTTP_HEADERS_ETAG);
           const ifUnmodifiedSince = cachedResponse.headers.get(CachingClient.HTTP_HEADERS_LAST_MODIFIED);
 
@@ -151,8 +153,7 @@
         // (see https://fetch.spec.whatwg.org/#dom-request-clone)
 
 
-        const fetchResponse = await fetch(request.clone());
-        console.log('FETCH LINK', fetchResponse.headers.get(CachingClient.HTTP_HEADERS_LINK)); // console.log('  Response for %s from network is: %O', request.url, fetchResponse);
+        const fetchResponse = await fetch(request.clone()); // console.log('  Response for %s from network is: %O', request.url, fetchResponse);
         // Optional: Add in extra conditions here, e.g. response.type == 'basic' to only cache
         // responses from the same domain. See https://fetch.spec.whatwg.org/#concept-response-type
 
@@ -255,43 +256,49 @@
           etag,
           last_modified,
           url,
+          href,
           content
         } = envelop;
+        const path = url || href;
         const headers = {};
         headers[CachingClient.HTTP_HEADERS_ETAG] = etag;
         headers[CachingClient.HTTP_HEADERS_LAST_MODIFIED] = last_modified;
         return {
           headers,
           body: JSON.stringify(content),
-          url
+          url: path
         };
       });
 
       _defineProperty(this, "_getUnwrappedResources", async response => {
         const responseLinks = this._parseLinkHeader(response.headers);
 
-        console.log('LINKS', responseLinks);
         const jsonSchemaURI = responseLinks[this.jsonSchemaRelHeader];
         const unwrappedResources = [];
-        console.log('URI', jsonSchemaURI);
 
         if (jsonSchemaURI && jsonSchemaURI !== response.url) {
           const schema = await this.get(jsonSchemaURI, {
             json: true
+          }).catch(err => {
+            return {};
           });
-          const schemaId = schema.$id;
-          const schemaItems = schema.properties.content.properties.items;
 
-          if (schemaId == this.jsonSchemaEnvelopType) {
-            // Handle single resource
-            unwrappedResources.push(this._getUnwrappedEnvelop(await response.json()));
-            return unwrappedResources;
-          } else if (schemaItems && schemaItems.$ref == this.jsonSchemaEnvelopType) {
-            // Handle array of resources
-            const content = await response.json();
+          if (schema.properties && schema.$id) {
+            const schemaId = schema.$id;
+            const schemaItems = schema.properties.content.properties.items;
 
-            for (const envelop of content) {
-              unwrappedResources.push(this._getUnwrappedEnvelop(envelop));
+            if (schemaId == this.jsonSchemaEnvelopType) {
+              // Handle single resource
+              unwrappedResources.push(this._getUnwrappedEnvelop(await response.json()));
+            } else if (schemaItems && schemaItems.properties.content.$ref == this.jsonSchemaEnvelopType) {
+              // Handle array of resources
+              const {
+                content
+              } = await response.json();
+
+              for (const envelop of content) {
+                unwrappedResources.push(this._getUnwrappedEnvelop(envelop));
+              }
             }
           }
         }
@@ -305,7 +312,7 @@
         const lastModifiedHeader = headers.get(CachingClient.HTTP_HEADERS_LAST_MODIFIED);
         const eTagHeader = headers.get(CachingClient.HTTP_HEADERS_ETAG);
         const lastModifiedCacheHeader = cacheResponseHeaders.get(CachingClient.HTTP_HEADERS_LAST_MODIFIED);
-        const eTagCacheHeader = cacheResponseHeaders.get(CachingClient.HTTP_HEADERS_ETAG); // TODO: Check if a better validation is needed
+        const eTagCacheHeader = cacheResponseHeaders.get(CachingClient.HTTP_HEADERS_ETAG); // TODO: Check if a better validation is needed        
 
         return eTagCacheHeader == eTagHeader && lastModifiedCacheHeader == lastModifiedHeader;
       });
@@ -333,7 +340,6 @@
       _defineProperty(this, "_parseLinkHeader", headers => {
         // Taken from: https://gist.github.com/niallo/3109252#gistcomment-2883309
         const header = headers.get(CachingClient.HTTP_HEADERS_LINK);
-        console.log('HEADER', header);
 
         if (!header || header.length === 0) {
           return {};
@@ -444,17 +450,21 @@
 
   _defineProperty(CachingClient, "DELETE", 'DELETE');
 
-  _defineProperty(CachingClient, "HTTP_HEADERS_CONTENT_TYPE", 'content-type');
+  _defineProperty(CachingClient, "HTTP_HEADERS_CONTENT_TYPE", 'Content-Type');
 
   _defineProperty(CachingClient, "HTTP_HEADERS_LINK", 'Link');
 
-  _defineProperty(CachingClient, "HTTP_HEADERS_LOCATION", 'location');
+  _defineProperty(CachingClient, "HTTP_HEADERS_LOCATION", 'Location');
 
   _defineProperty(CachingClient, "HTTP_HEADERS_ETAG", 'ETag');
 
   _defineProperty(CachingClient, "HTTP_HEADERS_LAST_MODIFIED", 'Last-Modified');
 
   _defineProperty(CachingClient, "HTTP_HEADERS_IF_MATCH", 'If-Match');
+
+  _defineProperty(CachingClient, "HTTP_HEADERS_IF_UNMODIFIED_SINCE", 'If-Unmodified-Since');
+
+  _defineProperty(CachingClient, "HTTP_HEADERS_CACHE_CONTROL", 'Cache-Control');
 
   _defineProperty(CachingClient, "HTTP_HEADERS_IF_UNMODIFIED_SINCE", 'If-Unmodified-Since');
 

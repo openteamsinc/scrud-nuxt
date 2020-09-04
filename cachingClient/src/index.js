@@ -57,12 +57,14 @@ class CachingClient extends EventDispatcher{
     static OPTIONS = 'OPTIONS';
     static PUT = 'PUT';
     static DELETE = 'DELETE';
-    static HTTP_HEADERS_CONTENT_TYPE = 'content-type';
+    static HTTP_HEADERS_CONTENT_TYPE = 'Content-Type';
     static HTTP_HEADERS_LINK = 'Link';
-    static HTTP_HEADERS_LOCATION = 'location';
+    static HTTP_HEADERS_LOCATION = 'Location';
     static HTTP_HEADERS_ETAG = 'ETag';
     static HTTP_HEADERS_LAST_MODIFIED = 'Last-Modified';
     static HTTP_HEADERS_IF_MATCH = 'If-Match';
+    static HTTP_HEADERS_IF_UNMODIFIED_SINCE = 'If-Unmodified-Since';
+    static HTTP_HEADERS_CACHE_CONTROL = 'Cache-Control';
     static HTTP_HEADERS_IF_UNMODIFIED_SINCE = 'If-Unmodified-Since';
 
     constructor(cacheVersion=1, currentCache='read-through',
@@ -117,7 +119,9 @@ class CachingClient extends EventDispatcher{
             // and we can just return it for now.
             // e.g do a HEAD request to check cache headers for the resource.
             // console.log(' Found response in cache:', cachedResponse);
-            const headRequest = new Request(url, {method: CachingClient.HEAD});
+            const headHeaders = {};
+            headHeaders[CachingClient.HTTP_HEADERS_CACHE_CONTROL] = 'no-store';
+            const headRequest = new Request(url, {method: CachingClient.HEAD, headers: headHeaders});
             const headResponse = await fetch(headRequest);
             if(this._cacheUpToDate(headResponse, cachedResponse)){
                 return cachedResponse.clone();
@@ -125,7 +129,6 @@ class CachingClient extends EventDispatcher{
         } else if (!cachedResponse && (method == CachingClient.PUT || method == CachingClient.DELETE)) {
             throw new Error(`Can't do a ${request.method} without previously having information in the Cache about the resource`);
         } else if (cachedResponse && (method == CachingClient.PUT || method == CachingClient.DELETE)) {
-            console.log('ETAG', `${cachedResponse.headers.get(CachingClient.HTTP_HEADERS_ETAG)}`);
             const ifMatch = cachedResponse.headers.get(CachingClient.HTTP_HEADERS_ETAG);
             const ifUnmodifiedSince = cachedResponse.headers.get(CachingClient.HTTP_HEADERS_LAST_MODIFIED);
             if (ifMatch) {
@@ -144,7 +147,6 @@ class CachingClient extends EventDispatcher{
         // Both fetch() and cache.put() "consume" the request, so we need to make a copy.
         // (see https://fetch.spec.whatwg.org/#dom-request-clone)
         const fetchResponse = await fetch(request.clone());
-        console.log('FETCH LINK', fetchResponse.headers.get(CachingClient.HTTP_HEADERS_LINK))
         // console.log('  Response for %s from network is: %O', request.url, fetchResponse);
     
         // Optional: Add in extra conditions here, e.g. response.type == 'basic' to only cache
@@ -216,37 +218,37 @@ class CachingClient extends EventDispatcher{
 
     // Extract information from an envelop. Get the headers, body and url from the envelop provided.
     _getUnwrappedEnvelop = (envelop) => {
-        const {etag, last_modified, url, content} = envelop;
+        const {etag, last_modified, url, href, content} = envelop;
+        const path = url || href;
         const headers = {};
         headers[CachingClient.HTTP_HEADERS_ETAG] = etag;
         headers[CachingClient.HTTP_HEADERS_LAST_MODIFIED] = last_modified;
 
         return {headers,
                 body: JSON.stringify(content),
-                url};
+                url: path};
     }
     
     // Detect that a response is an Envelop and retrieve a list of unwrapped envelopes if needed.
      _getUnwrappedResources = async (response) => {
         const responseLinks = this._parseLinkHeader(response.headers);
-        console.log('LINKS', responseLinks);
         const jsonSchemaURI = responseLinks[this.jsonSchemaRelHeader];
         const unwrappedResources = [];
-        console.log('URI', jsonSchemaURI);
         if(jsonSchemaURI && jsonSchemaURI !== response.url){
-            const schema = await this.get(jsonSchemaURI, {json: true});
-            const schemaId = schema.$id;
-            const schemaItems = schema.properties.content.properties.items;
-            if (schemaId == this.jsonSchemaEnvelopType){
-                // Handle single resource
-                unwrappedResources.push(this._getUnwrappedEnvelop(await response.json()));
-                return unwrappedResources;
-            } else if (schemaItems && schemaItems.$ref == this.jsonSchemaEnvelopType) {
-                // Handle array of resources
-                const content = await response.json();
-                for (const envelop of content) {
-                    unwrappedResources.push(this._getUnwrappedEnvelop(envelop));
-                }
+            const schema = await this.get(jsonSchemaURI, {json: true}).catch((err)=>{return {}});
+            if (schema.properties && schema.$id){
+                const schemaId = schema.$id;
+                const schemaItems = schema.properties.content.properties.items;
+                if (schemaId == this.jsonSchemaEnvelopType){
+                    // Handle single resource
+                    unwrappedResources.push(this._getUnwrappedEnvelop(await response.json()));
+                } else if (schemaItems && schemaItems.properties.content.$ref == this.jsonSchemaEnvelopType) {
+                    // Handle array of resources
+                    const {content} = await response.json();
+                    for (const envelop of content) {
+                        unwrappedResources.push(this._getUnwrappedEnvelop(envelop));
+                    }
+                }   
             }
         }
         return unwrappedResources;
@@ -262,7 +264,7 @@ class CachingClient extends EventDispatcher{
         const eTagHeader = headers.get(CachingClient.HTTP_HEADERS_ETAG);
         const lastModifiedCacheHeader = cacheResponseHeaders.get(CachingClient.HTTP_HEADERS_LAST_MODIFIED);
         const eTagCacheHeader = cacheResponseHeaders.get(CachingClient.HTTP_HEADERS_ETAG);
-        // TODO: Check if a better validation is needed
+        // TODO: Check if a better validation is needed        
         return eTagCacheHeader == eTagHeader && lastModifiedCacheHeader == lastModifiedHeader;
     }
 
@@ -286,7 +288,6 @@ class CachingClient extends EventDispatcher{
     _parseLinkHeader = (headers) => {
         // Taken from: https://gist.github.com/niallo/3109252#gistcomment-2883309
         const header = headers.get(CachingClient.HTTP_HEADERS_LINK);
-        console.log('HEADER', header);
         if (!header || header.length === 0) {
             return {};
         }    
