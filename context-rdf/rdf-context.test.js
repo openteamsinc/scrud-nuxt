@@ -32,14 +32,14 @@ describe('Supertype tests', () => {
         const context = new RdfContext();
         const subclassOf = await context.supertype(
             'http://schema.org/Vehicle', './jsonld-tests/tree.jsonld', offlineResourceSolver);
-        expect(subclassOf).toEqual('http://schema.org/Product');
+        expect(subclassOf).toEqual(['http://schema.org/Product']);
       });
     
     it('Get supertype using offline context - file - without supertype', async () => {
     const context = new RdfContext();
     const subclassOf = await context.supertype(
         'http://schema.org/Thing', './jsonld-tests/tree.jsonld', offlineResourceSolver);
-    expect(subclassOf).toEqual('');
+    expect(subclassOf).toEqual([]);
     });
     
     it('Get supertype using online context - HTTP request - with supertype', async () => {
@@ -47,7 +47,7 @@ describe('Supertype tests', () => {
         fetch.mockOnce(context);
         const subclassOf = await (new RdfContext()).supertype(
             'http://schema.org/Vehicle', 'http://mock.com/api/jsonld-tests/tree.jsonld', onlineResourceSolver);
-        expect(subclassOf).toEqual('http://schema.org/Product');
+        expect(subclassOf).toEqual(['http://schema.org/Product']);
       });
     
     it('Get supertype using online context - HTTP request - without supertype', async () => {
@@ -55,6 +55,6 @@ describe('Supertype tests', () => {
     fetch.mockOnce(context);
     const subclassOf = await (new RdfContext()).supertype(
         'http://schema.org/Thing', 'http://mock.com/api/jsonld-tests/tree.jsonld', onlineResourceSolver);
-    expect(subclassOf).toEqual('');
+    expect(subclassOf).toEqual([]);
     });
 });
