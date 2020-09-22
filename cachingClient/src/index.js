@@ -158,16 +158,19 @@ class CachingClient extends EventDispatcher{
             // (https://fetch.spec.whatwg.org/#dom-request-clone)
             if (method == CachingClient.GET || method == CachingClient.PUT || method == CachingClient.OPTIONS ){
                 // Update the cache
-                cache.put(url, fetchResponse.clone());
+                await cache.put(url, fetchResponse.clone());
             } else if (method == CachingClient.DELETE){
                 // Delete the entry from the cache
-                cache.delete(url);
+                await cache.delete(url);
             } else if (method == CachingClient.POST){
                 // Update the cache if the response has (1) A location header (2) The new resource in the body
                 const locationHeader = fetchResponse.headers.get(CachingClient.HTTP_HEADERS_LOCATION);
                 const postBody = fetchResponse.clone().body;
                 if (locationHeader && postBody){
-                    cache.put(locationHeader, fetchResponse.clone());
+                   await cache.put(locationHeader, fetchResponse.clone());
+                }
+                if(fetchResponse.status == 201){
+                    await cache.delete(url);
                 }
             }
             const unwrappedResources = await this._getUnwrappedResources(fetchResponse.clone());
