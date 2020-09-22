@@ -16,8 +16,9 @@
         "bootstrap": "^4.5.0",
         "bootstrap-vue": "^2.15.0",
         "caching-client": "file:../cachingClient",
-        "lodash": "^4.17.19",
+        "li": "^1.3.0",
         "nuxt": "^2.13.0",
+        "rdf-context": "file:../context-rdf",
         "vue-form-json-schema": "^2.8.2"
     },
     "devDependencies": {

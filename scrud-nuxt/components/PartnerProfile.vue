@@ -1,8 +1,8 @@
 <template>
   <b-card class="partner-card">
-    <b-card-img :src="logo" alt="Image"></b-card-img>
+    <b-card-img :src="data.content.logo" alt="Image"></b-card-img>
     <b-card-body>
-      <b-card-title>{{ displayName }}</b-card-title>
+      <b-card-title>{{ data.content.displayName }}</b-card-title>
     </b-card-body>
   </b-card>
 </template>
@@ -12,11 +12,8 @@
 export default {
   name: 'PartnerProfile',
   props: {
-    displayName: {
-      type: String
-    },
-    logo: {
-      type: String
+    data: {
+      type: Object
     }
   },
   methods: {
