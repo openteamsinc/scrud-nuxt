@@ -230,7 +230,7 @@ class CachingClient extends EventDispatcher{
     }
     
     // Detect that a response is an Envelop and retrieve a list of unwrapped envelopes if needed.
-     _getUnwrappedResources = async (response) => {
+    _getUnwrappedResources = async (response) => {
         const responseLinks = this._parseLinkHeader(response.headers);
         const jsonSchemaURI = responseLinks[this.jsonSchemaRelHeader];
         const unwrappedResources = [];
@@ -238,17 +238,19 @@ class CachingClient extends EventDispatcher{
             const schema = await this.get(jsonSchemaURI, {json: true}).catch((err)=>{return {}});
             if (schema.properties && schema.$id){
                 const schemaId = schema.$id;
-                const schemaItems = schema.properties.content.properties.items;
                 if (schemaId == this.jsonSchemaEnvelopType){
                     // Handle single resource
                     unwrappedResources.push(this._getUnwrappedEnvelop(await response.json()));
-                } else if (schemaItems && schemaItems.properties.content.$ref == this.jsonSchemaEnvelopType) {
+                } else if (schema.properties.content) {
                     // Handle array of resources
-                    const {content} = await response.json();
-                    for (const envelop of content) {
-                        unwrappedResources.push(this._getUnwrappedEnvelop(envelop));
+                    const schemaItems = schema.properties.content.properties.items;
+                    if(schemaItems && schemaItems.properties.content.$ref == this.jsonSchemaEnvelopType) {
+                       const {content} = await response.json();
+                       for (const envelop of content) {
+                           unwrappedResources.push(this._getUnwrappedEnvelop(envelop));
+                       }
                     }
-                }   
+                }
             }
         }
         return unwrappedResources;

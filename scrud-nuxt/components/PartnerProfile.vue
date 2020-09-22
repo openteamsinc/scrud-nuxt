@@ -4,8 +4,10 @@
     <b-card-body>
       <b-card-title>{{ displayName }}</b-card-title>
     </b-card-body>
-    <b-button v-b-modal.modal @click="getProfile">Edit</b-button>
-    <b-modal id="modal" hide-backdrop content-class="shadow" title="Edit Partner Profile">
+
+    <b-button variant="danger" @click="deleteProfile">Delete</b-button>
+    <b-button v-b-modal.url @click="getProfile">Edit</b-button>
+    <b-modal :id="url" hide-backdrop content-class="shadow" title="Edit Partner Profile">
       <b-form class="col align-self-right">
         <b-form-group label="Name" label-for="name">
           <b-form-input id="name" v-model="data.display_name">
@@ -36,10 +38,7 @@
 
 <script>
 import DemoService from '~/services/DemoService'
-// import axios from 'axios'
 const service = new DemoService()
-// axios.defaults.headers.put['If-Match'] = 'e64683947c744c5c82244b0fd060427c'
-// axios.defaults.headers.put['If-Unmodified-Since'] = "Wed, 02 Sep 2020 17:25:12 GMT"
 
 export default {
   name: 'PartnerProfile',
@@ -66,41 +65,31 @@ export default {
     }
   },
   mounted () {
-    // this.axiosGet()
-    // this.axiosPut()
+
   },
   methods: {
     getProfile () {
+      this.$bvModal.show(this.url)
       service.getPartnerProfile(this.url)
-      .then(res => {
-        this.data.display_name = res.display_name
-        this.data.slug = res.slug
-        this.data.logo = res.logo
-      })
+        .then(res => {
+          this.data.display_name = res.display_name
+          this.data.slug = res.slug
+          this.data.logo = res.logo
+        })
     },
     submit () {
-      this.$bvModal.hide('modal')
+      this.$bvModal.hide(this.url)
       service.editPartnerProfile(this.url, this.data)
-      console.log(this.data)
+        .then(res => {
+          console.log(res)
+        })
     },
-    // axiosGet () {
-    //   axios.get(this.url)
-    //     .then(response => {
-    //       console.log(response)
-    //       this.data = response.data
-    //       this.data.displayName = "eddited test"
-    //       console.log(this.data.displayName)
-    //     })
-    // },
-    // axiosPut () {
-    //   axios.put(this.url, this.data)
-    //     .then(response => {
-    //       console.log(response);
-    //     })
-    //     .catch(error => {
-    //       console.log(error);
-    //     });
-    // }
+    deleteProfile () {
+      service.deletePartnerProfile(this.url)
+        .then(res => {
+          console.log(res)
+        })
+    }
   }
 }
 </script>

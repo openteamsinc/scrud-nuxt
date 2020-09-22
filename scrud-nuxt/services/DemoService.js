@@ -22,6 +22,10 @@ export default class DemoService {
   }
 
   editPartnerProfile (url, data) {
-      return cachingClient.put(url, data)
+    return cachingClient.put(url, data)
+  }
+
+  deletePartnerProfile (url) {
+    return cachingClient.delete(url)
   }
 }

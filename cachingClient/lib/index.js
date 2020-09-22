@@ -282,22 +282,25 @@
           }).catch(err => {
             return {};
           });
-
+          
           if (schema.properties && schema.$id) {
             const schemaId = schema.$id;
-            const schemaItems = schema.properties.content.properties.items;
 
             if (schemaId == this.jsonSchemaEnvelopType) {
               // Handle single resource
               unwrappedResources.push(this._getUnwrappedEnvelop(await response.json()));
-            } else if (schemaItems && schemaItems.properties.content.$ref == this.jsonSchemaEnvelopType) {
+            } else if (schema.properties.content) {
               // Handle array of resources
-              const {
-                content
-              } = await response.json();
+              const schemaItems = schema.properties.content.properties.items;
 
-              for (const envelop of content) {
-                unwrappedResources.push(this._getUnwrappedEnvelop(envelop));
+              if (schemaItems && schemaItems.properties.content.$ref == this.jsonSchemaEnvelopType) {
+                const {
+                  content
+                } = await response.json();
+
+                for (const envelop of content) {
+                  unwrappedResources.push(this._getUnwrappedEnvelop(envelop));
+                }
               }
             }
           }

@@ -16,7 +16,7 @@
       <div class="d-md-flex align-items-center h-md-100 p-5 justify-content-center">
         <b-form class="col col-lg-4 align-self-right" @submit="createPartnerProfile" v-if="show">
           <b-form-group label="Name" label-for="name">
-            <b-form-input id="name" v-model="data.displayName">
+            <b-form-input id="name" v-model="data.display_name">
             </b-form-input>
           </b-form-group>
 
@@ -81,24 +81,24 @@
       createPartnerProfile (evt) {
         evt.preventDefault()
         service.createPartnerProfile(this.data)
+          .then(res => {
+            console.log(res)
+          })
       },
       mapResourses (res) {
         let children = []
-        console.log('res', res)
         res.forEach(elem => {
-          console.log(elem)
           children.push({
             component: 'PartnerProfile',
             fieldOptions: {
               props: {
-                displayName: elem.content.displayName,
+                displayName: elem.content.display_name,
                 logo: elem.content.logo || 'http://bamflash.com/wp-content/uploads/2013/05/placeholder.png',
                 url: elem.href
               }
             }
           })
         })
-        console.log(children)
         this.mapping = {
           model: {},
           state: {},
