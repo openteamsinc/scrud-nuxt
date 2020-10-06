@@ -286,7 +286,7 @@
           }).catch(err => {
             return {};
           });
-          
+
           if (schema.properties && schema.$id) {
             const schemaId = schema.$id;
 
