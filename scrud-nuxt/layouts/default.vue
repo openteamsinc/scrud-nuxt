@@ -8,7 +8,10 @@
       <b-collapse id="nav-collapse" is-nav>
         <b-navbar-nav>
           <b-nav-item-dropdown text="Examples">
+            <b-dropdown-item href="/manage">Manage</b-dropdown-item>
             <b-dropdown-item href="/partner-profile">Partner Profile</b-dropdown-item>
+            <b-dropdown-item href="/address">Address</b-dropdown-item>
+            <b-dropdown-item href="/partner-signup">Signup</b-dropdown-item>
           </b-nav-item-dropdown>
         </b-navbar-nav>
       </b-collapse>

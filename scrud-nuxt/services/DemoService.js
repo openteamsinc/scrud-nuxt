@@ -27,6 +27,18 @@ export default class DemoService {
   }
 
   clearCache() {
-    cachingClient.clearCache();
+    cachingClient.clearCache()
+  }
+
+  get(url) {
+    return cachingClient.get(url)
+  }
+
+  options(url) {
+    return cachingClient.options(url)
+  }
+
+  post(url, data) {
+    return cachingClient.post(url, data)
   }
 }

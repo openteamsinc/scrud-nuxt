@@ -12,18 +12,21 @@
 <script>
 
 import VueFormJsonSchema from 'vue-form-json-schema/dist/vue-form-json-schema.esm.js';
-import DemoService from '~/services/DemoService'
 import RdfContext from 'rdf-context'
+import CachingClient from 'caching-client'
 import { UISchema, UISchemaNode } from '~/plugins/ui-schema'
 import li from 'li'
 
 export default {
   props: {
-    link: {
+    scrudResourceURL: {
       type: String
     },
-    data: {
+    configMapping: {
       type: Object
+    },
+    uiType: {
+      type: String
     }
   },
   components: {
@@ -31,70 +34,148 @@ export default {
   },
   data () {
     return {
-      map: {
-        host: 'http://localhost:8000',
-        components: {
-          '/collections-json-ld/partner-profiles/': 'CardCollection',
-          '/json-ld/PartnerProfile/': 'PartnerProfile'
-        }
-      },
       uiSchemaObject: new UISchema(),
+      cachingClient: new CachingClient(),
       uiSchema: [],
-      components: []
+      components: [],
+      schemaURL: null,
+      contextURL: null
     }
   },
   created () {
-    let linkContext = li.parse(this.link)['http://www.w3.org/ns/json-ld#context']
-    let linkComponent = this.matchComponent(linkContext)
-  },
-  methods: {
-    matchComponent (url) {
-      let toMatch = new URL(url)
-      let pathname = toMatch.pathname
-      let component = this.map.components[pathname]
-
-      if (component) {
-        this.checkContent(url, component)
-      } else {
-        throw new Error('Scrud resource mapping error: path ' + pathname + ' could not be matched with a component. Check configuration mapping')
-      }
-    },
-    checkContent (url, component) {
-      this.components.push(component)
-      fetch(url).then(res => {
+    // Fetch options to get schema and context URLs then call according method to generate UI
+    this.cachingClient.options(this.scrudResourceURL).then(res => {
         res.json().then(body => {
-          let envelopeKey
+          let requestType = body[this.uiType]
 
-          Object.keys(body.content).forEach(key => {
-            envelopeKey = key.includes(':envelopeContents') ? key : undefined
-          })
-          
-          let envelopeContentUrl = body.content[envelopeKey]
-          let envelopeContentComponent = this.matchComponent(envelopeContentUrl)
+          switch (this.uiType) {
+            case 'post':
+              this.schemaURL = this.getPostSchemaURL(requestType)
+              this.contextURL = this.getPostContextURL(requestType)
+              return this.generateUIPost()
+            case 'get':
+              this.schemaURL = this.getSchemaURL(requestType)
+              this.contextURL = this.getContextURL(requestType)
+              return this.generateUIGet()
+            default:
+              break
+        }
 
-          // TODO: Add auto positioning in the tree structure i.e. remove magic array numbers
-          switch (body.content['@container']) {
-            case '@list': {
-              let children = []
-
-              this.data.content.forEach(data => {
-                let fieldOptions = {
-                  props: {
-                    data: data
-                  }
-                }
-                children.push(new UISchemaNode(this.components[1], fieldOptions))
-              })
-
-              this.uiSchemaObject.createNode(this.components[0], {}, children)
-            }
-          }
-          this.uiSchema = this.uiSchemaObject.getUISchema()
-        })
-        .catch(err => {
-          console.log(err)
+          this.generateUIPost()
         })
       })
+  },
+  methods: {
+    getPostSchemaURL (data) {
+      return data.requestBody.content['application/json'].schema
+    },
+    getPostContextURL (data) {
+      return data.requestBody.content['application/json'].context
+    },
+    getSchemaURL (data) {
+      return data.responses['200'].content['application/json'].schema
+    },
+    getContextURL (data) {
+      return data.responses['200'].content['application/json'].context
+    },
+    generateUIPost () {
+      this.cachingClient.get(this.contextURL).then(res => {
+        res.json().then(body => {
+          let superType = this.getComponentByRdfType(body['@type'])
+          let superTypeNode = new UISchemaNode(superType)
+          
+          let children = []
+          let afterType = false
+
+          Object.keys(body).forEach(key => {
+            if (afterType) {
+              let component = this.getComponentByRdfType(body[key]['@id'])
+              let node = new UISchemaNode(component)
+
+              children.push(node)
+            } else {
+              afterType = key === '@type'
+            }
+          })
+
+          superTypeNode.setChildren(children)
+
+          this.uiSchemaObject.addNode(superTypeNode)
+
+          this.uiSchema = this.uiSchemaObject.getUISchema()
+        })
+      })
+    },
+    generateUIGet () {
+      this.cachingClient.get(this.contextURL).then(res => {
+        res.json().then(body => {
+          this.cachingClient.get(this.scrudResourceURL).then(res => {
+            res.json().then(data => {
+              let superType = this.getComponentByRdfType(body.content['@container'])
+              let superTypeNode = new UISchemaNode(superType)
+
+              let href = data.content[0].href
+
+              this.cachingClient.get(href).then(ref => {
+                let linkHeaders = ref.headers.get('link')
+                let linkContext = li.parse(linkHeaders)['http://www.w3.org/ns/json-ld#context']
+
+                this.cachingClient.get(linkContext).then(ld => {
+                  ld.json().then(ldJson => {
+                    let children = []
+
+                    data.content.forEach(dataItem => {
+                      let content = dataItem.content
+
+                      let card = new UISchemaNode('b-card')
+
+                      let cardChildren = []
+
+                      Object.keys(ldJson).forEach(key => {
+                        console.log(key)
+                        let component = this.getComponentByRdfType(ldJson[key]['@id'])
+
+                        let fieldOptions = {
+                          props: {
+                            data: content[key]
+                          }
+                        }
+
+                        let node = new UISchemaNode(component, fieldOptions)
+
+                        cardChildren.push(node)
+                      })
+                      card.setChildren(cardChildren)
+                      children.push(card)
+                    })
+
+                    superTypeNode.setChildren(children)
+                    
+                    this.uiSchemaObject.addNode(superTypeNode)
+
+                    this.uiSchema = this.uiSchemaObject.getUISchema()
+                  })
+                })
+              })
+            })
+          })
+        })
+      })
+    },
+    getComponentByRdfType (type) {
+      let match = this.configMapping.components[type]
+
+      if (match) {
+        switch (this.uiType) {
+          case 'post':
+            return match.input
+          case 'get':
+            return match.render
+          default:
+            break
+        }
+      }
+      return 'String'
     }
   },
 }

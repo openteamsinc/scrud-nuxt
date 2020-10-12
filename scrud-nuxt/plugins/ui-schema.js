@@ -12,6 +12,10 @@ class UISchema {
     )
   }
 
+  addNode(node) {
+    this.uiSchema.push(node)
+  }
+
   getUISchema() {
     let schema = []
 
