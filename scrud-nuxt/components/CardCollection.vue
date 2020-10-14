@@ -10,13 +10,16 @@ export default {
       let cards = this.$slots.default
       let elems = []
 
-      cards.forEach(card => {
-        elems.push(
-          <div class="col-auto mb-3">
-            { card }
-          </div>
-        )
-      })
+      if (cards) {
+        cards.forEach(card => {
+          elems.push(
+            <div class="col-auto mb-3">
+              { card }
+            </div>
+          )
+        })
+      }
+
 
       return (
         <div class="container mt-3">
