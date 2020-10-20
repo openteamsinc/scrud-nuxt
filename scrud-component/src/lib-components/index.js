@@ -1,11 +1,5 @@
 /* eslint-disable import/prefer-default-export */
 
-// Base components
-export { default as ScrudComponent } from './components/ScrudComponent.vue';
-export { default as Person } from './components/Person.vue'
-export { default as PartnerProfile } from './components/PartnerProfile.vue';
-export { default as CardCollection } from './components/CardCollection.vue';
-
 // Form components
 export { default as Form } from './components/Form.vue';
 export { default as FormCompanyName } from './components/Form/FormCompanyName.vue';
@@ -23,3 +17,9 @@ export  {default as URL} from './components/Render/URL.vue';
 export  {default as Services} from './components/Render/Services.vue';
 export  {default as Skills} from './components/Render/Skills.vue';
 export  {default as String} from './components/Render/String.vue';
+
+// Base components
+export { default as Person } from './components/Person.vue'
+export { default as PartnerProfile } from './components/PartnerProfile.vue';
+export { default as CardCollection } from './components/CardCollection.vue';
+export { default as ScrudComponent } from './components/ScrudComponent.vue';

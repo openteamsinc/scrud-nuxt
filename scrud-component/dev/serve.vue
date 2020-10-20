@@ -58,8 +58,8 @@ export default Vue.extend({
             }
           }
         },
-        url: 'http://localhost:8000/partner-program-applications/',
-        uiType: 'get',
+        url: 'http://localhost:8000/partner-profiles/',
+        uiType: 'post',
         showComponent: false
       }
     },
