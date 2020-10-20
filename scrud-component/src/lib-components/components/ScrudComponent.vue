@@ -44,6 +44,8 @@ export default {
   },
   created () {
     // Fetch options to get schema and context URLs then call according method to generate UI
+    console.log(this);
+    console.log(this._props)
     this.cachingClient.options(this.scrudResourceURL).then(res => {
         res.json().then(body => {
           let requestType = body[this.uiType]

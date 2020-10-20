@@ -74,7 +74,7 @@ if (!argv.format || argv.format === 'es') {
     ...baseConfig,
     external,
     output: {
-      file: 'dist/scrud-component.esm.js',
+      file: 'lib/scrud-component.esm.js',
       format: 'esm',
       exports: 'named',
     },
@@ -108,7 +108,7 @@ if (!argv.format || argv.format === 'cjs') {
     external,
     output: {
       compact: true,
-      file: 'dist/scrud-component.ssr.js',
+      file: 'lib/scrud-component.ssr.js',
       format: 'cjs',
       name: 'ScrudComponent',
       exports: 'named',
@@ -137,7 +137,7 @@ if (!argv.format || argv.format === 'iife') {
     external,
     output: {
       compact: true,
-      file: 'dist/scrud-component.min.js',
+      file: 'lib/scrud-component.min.js',
       format: 'iife',
       name: 'ScrudComponent',
       exports: 'named',

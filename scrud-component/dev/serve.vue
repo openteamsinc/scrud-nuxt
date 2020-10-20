@@ -59,7 +59,7 @@ export default Vue.extend({
           }
         },
         url: 'http://localhost:8000/partner-program-applications/',
-        uiType: 'post',
+        uiType: 'get',
         showComponent: false
       }
     },
@@ -76,6 +76,13 @@ export default Vue.extend({
 
 <template>
   <div id="app">
-    <scrud-component />
+    <div v-if="showComponent">
+      <ScrudComponent
+        :scrudResourceURL="url"
+        :configMapping="map"
+        :uiType="uiType"
+      />
+    </div>
+    <b-btn @click="generateComponent" variant="primary">Create Component</b-btn>
   </div>
 </template>

@@ -1,6 +1,6 @@
 {
   "name": "scrud-component",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "SCRUD Vue Component",
   "main": "dist/scrud-component.ssr.js",
   "browser": "dist/scrud-component.esm.js",
@@ -18,6 +18,8 @@
     "build:unpkg": "cross-env NODE_ENV=production rollup --config build/rollup.config.js --format iife"
   },
   "dependencies": {
+    "@vue/babel-helper-vue-jsx-merge-props": "^1.0.0",
+    "@vue/babel-preset-jsx": "^1.1.2",
     "bootstrap": "^4.5.3",
     "bootstrap-vue": "^2.18.0",
     "caching-client": "file:../cachingClient",
