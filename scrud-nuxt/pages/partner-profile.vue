@@ -87,24 +87,26 @@
         showComponent: false
       }
     },
-    created () {
-      const service = new DemoService()
-
-      let response = service.getPartnerProfiles()
-        .then(res => {
-          this.link = res.headers.get('link')
-          return res.json()
-        })
-        .then(body => {
-          this.data = body
-        })
-    },
     components: {
       ScrudComponent
     },
     methods: {
       generateComponent () {
         this.showComponent = !this.showComponent
+
+        // The fetch for partner profiles needs to be done after rendering to prevent the SSR process
+        // to encounter the caching client (it uses the Cache API available only from the browser) and showing a 
+        // 'ERROR  caches is not defined' message
+        const service = new DemoService()
+
+        let response = service.getPartnerProfiles()
+          .then(res => {
+            this.link = res.headers.get('link')
+            return res.json()
+          })
+          .then(body => {
+            this.data = body
+          })
       },
       createPartnerProfile (evt) {
         const service = new DemoService()
