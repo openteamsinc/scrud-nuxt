@@ -2,10 +2,10 @@
   "name": "scrud-component",
   "version": "0.1.0",
   "description": "SCRUD Vue Component",
-  "main": "dist/scrud-component.ssr.js",
-  "browser": "dist/scrud-component.esm.js",
-  "module": "dist/scrud-component.esm.js",
-  "unpkg": "dist/scrud-component.min.js",
+  "main": "lib/scrud-component.ssr.js",
+  "browser": "lib/scrud-component.esm.js",
+  "module": "lib/scrud-component.esm.js",
+  "unpkg": "lib/scrud-component.min.js",
   "files": [
     "dist/*",
     "src/**/*.vue"
@@ -42,11 +42,11 @@
     "rollup-plugin-babel": "^4.4.0",
     "rollup-plugin-terser": "^5.3.0",
     "rollup-plugin-vue": "^5.1.6",
-    "vue": "^2.6.11",
-    "vue-template-compiler": "^2.6.11"
+    "vue": "^2.6.12",
+    "vue-template-compiler": "^2.6.12"
   },
   "peerDependencies": {
-    "vue": "^2.6.11"
+    "vue": "^2.6.12"
   },
   "engines": {
     "node": ">=10"

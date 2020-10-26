@@ -8,6 +8,9 @@
             <ScrudComponent
               :link="link"
               :data="data"
+              :scrudResourceURL="url"
+              :configMapping="map"
+              :uiType="uiType"
             />
             <p>{{ link }}</p>
             <p>{{ data }}</p>
@@ -46,7 +49,7 @@
 </template>
 
 <script>
-  import ScrudComponent from '~/components/ScrudComponent'
+  import {ScrudComponent} from 'scrud-component'
 
   import DemoService from '~/services/DemoService'
 
@@ -55,6 +58,32 @@
       return {
         link: "",
         data: {},
+        map:{
+          host: 'http://localhost:8000',
+          components: {
+            'schema:legalName': {
+              input: 'FormName',
+              render: 'String'
+            },
+            'schema:name': {
+              input: 'FormName',
+              render: 'String'
+            },
+            'schema:identifier': {
+              input: 'FormName',
+              render: 'String'
+            },
+            'schema:logo': {
+              input: 'FormURL',
+              render: 'URL'
+            },
+            '@list': {
+              render: 'CardCollection'
+            }
+          }
+        },
+        url: 'http://localhost:8000/partner-profiles/',
+        uiType: 'get',
         showComponent: false
       }
     },

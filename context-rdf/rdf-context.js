@@ -1,6 +1,5 @@
 const JsonLdParser = require("jsonld-streaming-parser").JsonLdParser;
 const { JSONPath } = require("jsonpath-plus");
-const fs = require('fs');
 
 function RdfContext() {
 

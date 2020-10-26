@@ -35,8 +35,7 @@ export default {
   ** https://nuxtjs.org/guide/plugins
   */
   plugins: [
-    '~plugins/scrud-components',
-    '~plugins/caching-client'
+    { src: '~plugins/scrud-component.client.js', mode: 'client' }
   ],
   /*
   ** Auto import components

@@ -20,7 +20,7 @@ For more build options check the `package.json` `scripts` section
 
 ## Usage
 
-Clone this repo at the same level of the project that wll be using the `ScrudComponent` and install it using npm:
+Clone this repo at the same level of the project that will be using the `ScrudComponent` and install it using npm:
 
 ```bash
 $ npm install --save ./scrud-nuxt/scrud-component
