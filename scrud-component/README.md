@@ -26,6 +26,31 @@ Clone this repo at the same level of the project that will be using the `ScrudCo
 $ npm install --save ./scrud-nuxt/scrud-component
 ```
 
-Now your `package.json` should reflect the new dependency as `"scrud-component": "file:../scrud-nuxt/scrud-component"` and setup your project as with any other [Vue plugin](https://nuxtjs.org/guide/plugins/#vue-plugins)
+Now your `package.json` should reflect the new dependency as `"scrud-component": "file:../scrud-nuxt/scrud-component"` and setup your project as with any other [Vue plugin](https://nuxtjs.org/guide/plugins/#vue-plugins):
 
-An example using the `ScrudComponent` can be seen at the [`dev/serve.vue`](dev/serve.vue) file.
+* Create a `.js` at `~plugins/` something like `scrud-component.js`
+
+* The content of the file should look something like:
+
+```js
+import Vue from 'vue'
+import plugin from 'scrud-component'
+
+Vue.use(plugin)
+```
+
+* Add the plugin to `nuxt.config.js`:
+
+```js
+/*
+  ** Plugins to load before mounting the App
+  ** https://nuxtjs.org/guide/plugins
+  */
+  plugins: [
+    { src: '~plugins/scrud-component.js', mode: 'client' }
+  ],
+
+```
+
+
+An example use of the `ScrudComponent` can be seen at the [`dev/serve.vue`](dev/serve.vue) file and the [`scrud-nuxt` app](../scrud-nuxt/README.md)).
