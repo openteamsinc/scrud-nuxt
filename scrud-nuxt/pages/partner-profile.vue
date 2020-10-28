@@ -8,6 +8,9 @@
             <ScrudComponent
               :link="link"
               :data="data"
+              :scrudResourceURL="url"
+              :configMapping="map"
+              :uiType="uiType"
             />
             <p>{{ link }}</p>
             <p>{{ data }}</p>
@@ -46,7 +49,7 @@
 </template>
 
 <script>
-  import ScrudComponent from '~/components/ScrudComponent'
+  import {ScrudComponent} from 'scrud-component'
 
   import DemoService from '~/services/DemoService'
 
@@ -55,20 +58,34 @@
       return {
         link: "",
         data: {},
+        map:{
+          host: 'http://localhost:8000',
+          components: {
+            'schema:legalName': {
+              input: 'FormName',
+              render: 'String'
+            },
+            'schema:name': {
+              input: 'FormName',
+              render: 'String'
+            },
+            'schema:identifier': {
+              input: 'FormName',
+              render: 'String'
+            },
+            'schema:logo': {
+              input: 'FormURL',
+              render: 'URL'
+            },
+            '@list': {
+              render: 'CardCollection'
+            }
+          }
+        },
+        url: 'http://localhost:8000/partner-profiles/',
+        uiType: 'get',
         showComponent: false
       }
-    },
-    created () {
-      const service = new DemoService()
-
-      let response = service.getPartnerProfiles()
-        .then(res => {
-          this.link = res.headers.get('link')
-          return res.json()
-        })
-        .then(body => {
-          this.data = body
-        })
     },
     components: {
       ScrudComponent
@@ -76,6 +93,20 @@
     methods: {
       generateComponent () {
         this.showComponent = !this.showComponent
+
+        // The fetch for partner profiles needs to be done after rendering to prevent the SSR process
+        // to encounter the caching client (it uses the Cache API available only from the browser) and showing a 
+        // 'ERROR  caches is not defined' message
+        const service = new DemoService()
+
+        let response = service.getPartnerProfiles()
+          .then(res => {
+            this.link = res.headers.get('link')
+            return res.json()
+          })
+          .then(body => {
+            this.data = body
+          })
       },
       createPartnerProfile (evt) {
         const service = new DemoService()

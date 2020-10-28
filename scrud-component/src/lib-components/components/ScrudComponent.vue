@@ -14,7 +14,7 @@
 import VueFormJsonSchema from 'vue-form-json-schema/dist/vue-form-json-schema.esm.js';
 import RdfContext from 'rdf-context'
 import CachingClient from 'caching-client'
-import { UISchema, UISchemaNode } from '~/plugins/ui-schema'
+import { UISchema, UISchemaNode } from '../utils/ui-schema'
 import li from 'li'
 
 export default {

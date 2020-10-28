@@ -12,7 +12,7 @@
 </template>
 
 <script>
-  import ScrudComponent from '~/components/ScrudComponent'
+  import {ScrudComponent} from 'scrud-component'
 
   import DemoService from '~/services/DemoService'
 
