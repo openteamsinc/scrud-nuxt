@@ -35,7 +35,7 @@ export default {
   ** https://nuxtjs.org/guide/plugins
   */
   plugins: [
-    { src: '~plugins/scrud-component.js', mode: 'client' }
+    { src: '~plugins/scrud-component.js', ssr: false }
   ],
   /*
   ** Auto import components

@@ -47,10 +47,11 @@ Vue.use(plugin)
   ** https://nuxtjs.org/guide/plugins
   */
   plugins: [
-    { src: '~plugins/scrud-component.js', mode: 'client' }
+    { src: '~plugins/scrud-component.js', ssr: false }
   ],
 
 ```
+The ssr false option is needed since the `scrud-component` uses as HTTP Client the `Caching Client` which uses the Browser Cache API (i.e `caches` global variable).
 
 
 An example use of the `ScrudComponent` can be seen at the [`dev/serve.vue`](dev/serve.vue) file and the [`scrud-nuxt` app](../scrud-nuxt/README.md)).
